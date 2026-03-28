@@ -1,26 +1,148 @@
+@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg-cream: #FAFAF8;
+  --bg-warm: #F5F3EE;
+  --bg-warm-light: #F8F5F0;
+  --navy: #1A1A2E;
+  --navy-light: #2D2D44;
+  --coral: #E8614D;
+  --coral-hover: #D4503E;
+  --coral-light: #FEF0EE;
+  --indigo: #4A5FC1;
+  --indigo-light: #EEF0F9;
+  --gold: #D4A853;
+  --text-primary: #1A1A2E;
+  --text-secondary: #4A4A5A;
+  --text-muted: #8A8A9A;
+  --border-light: #E8E6E1;
+  --card-bg: #FFFFFF;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg-cream);
+  --color-foreground: var(--text-primary);
+  --color-navy: var(--navy);
+  --color-navy-light: var(--navy-light);
+  --color-coral: var(--coral);
+  --color-coral-hover: var(--coral-hover);
+  --color-coral-light: var(--coral-light);
+  --color-indigo: var(--indigo);
+  --color-indigo-light: var(--indigo-light);
+  --color-gold: var(--gold);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-border-light: var(--border-light);
+  --color-bg-warm: var(--bg-warm);
+  --color-bg-warm-light: var(--bg-warm-light);
+  --color-card-bg: var(--card-bg);
+  --font-sans: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg-cream);
+  color: var(--text-primary);
+  font-family: "Pretendard Variable", "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+/* Scroll-triggered animation utility */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceDown {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+@keyframes countPulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(74, 95, 193, 0); }
+  50% { box-shadow: 0 0 24px 4px rgba(74, 95, 193, 0.15); }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.animate-bounce-down {
+  animation: bounceDown 2s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Delay utilities for staggered animations */
+.delay-100 { animation-delay: 100ms; }
+.delay-200 { animation-delay: 200ms; }
+.delay-300 { animation-delay: 300ms; }
+.delay-400 { animation-delay: 400ms; }
+.delay-500 { animation-delay: 500ms; }
+.delay-600 { animation-delay: 600ms; }
+.delay-700 { animation-delay: 700ms; }
+
+/* Selection color */
+::selection {
+  background: var(--coral-light);
+  color: var(--navy);
 }
