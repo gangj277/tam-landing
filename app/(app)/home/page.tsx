@@ -3,11 +3,19 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
-  getTodayMission,
-  PAST_SESSIONS,
-  SEOYEON_PROFILE,
-  MISSIONS,
-} from "@/lib/dummy-data";
+  getFamilyMe,
+  getTodayMission as fetchTodayMission,
+  getTomorrowMission as fetchTomorrowMission,
+  listSessions,
+  getProfile,
+  ApiError,
+} from "@/lib/api-client";
+import type {
+  FamilyMe,
+  MissionData,
+  PastSessionItem,
+  ProfileData,
+} from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
 import type { MissionCategory } from "@/lib/types";
 
@@ -295,21 +303,121 @@ function CheckSVG({ color }: { color: string }) {
   );
 }
 
+/* ─── Loading Skeleton ─── */
+
+function HomeSkeleton() {
+  return (
+    <div className="px-5 pt-14 pb-6 animate-pulse">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full bg-bg-warm" />
+          <div>
+            <div className="h-5 w-24 bg-bg-warm rounded mb-1" />
+            <div className="h-3 w-40 bg-bg-warm rounded" />
+          </div>
+        </div>
+        <div className="w-20 h-10 bg-bg-warm rounded-2xl" />
+      </div>
+      <div className="h-4 w-20 bg-bg-warm rounded mb-3" />
+      <div className="bg-card-bg rounded-2xl border border-border-light overflow-hidden">
+        <div className="h-1.5 bg-bg-warm" />
+        <div className="h-[180px] bg-bg-warm mx-4 mt-3 rounded-xl" />
+        <div className="px-5 pb-5 pt-4">
+          <div className="h-4 w-16 bg-bg-warm rounded mb-3" />
+          <div className="h-6 w-48 bg-bg-warm rounded mb-2" />
+          <div className="h-4 w-32 bg-bg-warm rounded mb-3" />
+          <div className="h-4 w-full bg-bg-warm rounded mb-5" />
+          <div className="h-12 w-full bg-bg-warm rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Component ─── */
 
 export default function HomePage() {
-  const todayMission = getTodayMission();
-  const profile = SEOYEON_PROFILE;
-  const categoryMeta = CATEGORY_META[todayMission.category as MissionCategory];
   const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Data states
+  const [childName, setChildName] = useState("");
+  const [streak, setStreak] = useState(0);
+  const [todayMission, setTodayMission] = useState<MissionData | null>(null);
+  const [tomorrowMission, setTomorrowMission] = useState<MissionData | null>(null);
+  const [pastSessions, setPastSessions] = useState<PastSessionItem[]>([]);
 
   useEffect(() => {
     setMounted(true);
+
+    async function loadData() {
+      try {
+        // Fetch family info first to get activeChildId
+        const family = await getFamilyMe();
+        setChildName(family.activeChild.name);
+
+        // Fetch remaining data in parallel
+        const [todayRes, sessionsRes, profileRes, tomorrowRes] = await Promise.all([
+          fetchTodayMission(),
+          listSessions(6),
+          getProfile(family.activeChildId),
+          fetchTomorrowMission().catch(() => null),
+        ]);
+
+        setTodayMission(todayRes.mission);
+        setPastSessions(sessionsRes.sessions);
+        setStreak(profileRes.profile.stats.currentStreak);
+        if (tomorrowRes) {
+          setTomorrowMission(tomorrowRes.mission);
+        }
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          setError("로그인이 필요해요");
+        } else {
+          setError("데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
   }, []);
 
-  // Tomorrow's mission (locked teaser)
-  const tomorrowMission = MISSIONS[1];
-  const tomorrowCategoryMeta = CATEGORY_META[tomorrowMission.category as MissionCategory];
+  if (loading) {
+    return <HomeSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-[48px] mb-4">
+          {error === "로그인이 필요해요" ? "🔒" : "😢"}
+        </div>
+        <p className="text-[16px] font-bold text-navy mb-2">{error}</p>
+        <p className="text-[13px] text-text-muted text-center">
+          {error === "로그인이 필요해요"
+            ? "탐험을 시작하려면 먼저 로그인해주세요."
+            : "네트워크 연결을 확인하고 다시 시도해주세요."}
+        </p>
+      </div>
+    );
+  }
+
+  if (!todayMission) {
+    return (
+      <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <p className="text-[16px] font-bold text-navy mb-2">오늘의 미션을 준비 중이에요</p>
+        <p className="text-[13px] text-text-muted">잠시만 기다려주세요.</p>
+      </div>
+    );
+  }
+
+  const categoryMeta = CATEGORY_META[todayMission.category as MissionCategory];
+  const tomorrowCategoryMeta = tomorrowMission
+    ? CATEGORY_META[tomorrowMission.category as MissionCategory]
+    : null;
 
   return (
     <div className="page-enter px-5 pt-14 pb-6">
@@ -321,7 +429,7 @@ export default function HomePage() {
           <WavingHandSVG />
           <div>
             <h1 className="text-[22px] font-bold text-navy tracking-tight">
-              안녕, 서연
+              안녕, {childName}
             </h1>
             <p className="text-[13px] text-text-muted -mt-0.5">
               오늘도 새로운 세계가 기다리고 있어
@@ -334,7 +442,7 @@ export default function HomePage() {
           <FlameStreakSVG />
           <div className="text-right">
             <p className="text-[15px] font-bold text-navy leading-tight">
-              {profile.stats.currentStreak}일째
+              {streak}일째
             </p>
             <p className="text-[10px] text-text-muted">탐험 중!</p>
           </div>
@@ -424,89 +532,93 @@ export default function HomePage() {
       </div>
 
       {/* ── Past Missions ── */}
-      <div
-        className={`mb-7 ${mounted ? "animate-fade-in-up delay-400" : "opacity-0"}`}
-        style={{ animationFillMode: "both" }}
-      >
-        <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-3">
-          완료한 탐험
-        </p>
+      {pastSessions.length > 0 && (
+        <div
+          className={`mb-7 ${mounted ? "animate-fade-in-up delay-400" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-3">
+            완료한 탐험
+          </p>
 
-        <div className="flex flex-col gap-2.5">
-          {PAST_SESSIONS.map((session, idx) => {
-            const sessCategoryMeta =
-              CATEGORY_META[session.category as MissionCategory];
-            return (
-              <div
-                key={session.missionId}
-                className={`flex items-center gap-3.5 bg-card-bg rounded-2xl px-4 py-3.5 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
-                style={{
-                  animationDelay: `${500 + idx * 80}ms`,
-                  animationFillMode: "both",
-                }}
-              >
-                <CheckSVG color={sessCategoryMeta.color} />
+          <div className="flex flex-col gap-2.5">
+            {pastSessions.map((session, idx) => {
+              const sessCategoryMeta =
+                CATEGORY_META[session.category as MissionCategory];
+              return (
+                <div
+                  key={session.sessionId}
+                  className={`flex items-center gap-3.5 bg-card-bg rounded-2xl px-4 py-3.5 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                  style={{
+                    animationDelay: `${500 + idx * 80}ms`,
+                    animationFillMode: "both",
+                  }}
+                >
+                  <CheckSVG color={sessCategoryMeta.color} />
 
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-navy truncate">
-                    {session.title}
-                  </p>
-                  <p className="text-[12px] text-text-muted truncate">
-                    {session.choiceSummary}
-                  </p>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[14px] font-semibold text-navy truncate">
+                      {session.missionTitle}
+                    </p>
+                    <p className="text-[12px] text-text-muted truncate">
+                      {session.choiceSummary}
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end shrink-0">
+                    <span
+                      className="w-2 h-2 rounded-full mb-1"
+                      style={{ background: sessCategoryMeta.color }}
+                    />
+                    <span className="text-[10px] text-text-muted">
+                      {session.completedAt.slice(5).replace("-", "/")}
+                    </span>
+                  </div>
                 </div>
-
-                <div className="flex flex-col items-end shrink-0">
-                  <span
-                    className="w-2 h-2 rounded-full mb-1"
-                    style={{ background: sessCategoryMeta.color }}
-                  />
-                  <span className="text-[10px] text-text-muted">
-                    {session.completedAt.slice(5).replace("-", "/")}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* ── Tomorrow Teaser (Locked) ── */}
-      <div
-        className={`${mounted ? "animate-fade-in-up delay-700" : "opacity-0"}`}
-        style={{ animationFillMode: "both" }}
-      >
-        <div className="relative bg-bg-warm rounded-2xl px-5 py-4 border border-border-light overflow-hidden">
-          {/* Frosted overlay */}
-          <div className="absolute inset-0 bg-bg-warm/60 backdrop-blur-sm z-10 flex items-center justify-center">
-            <div className="flex items-center gap-2 bg-card-bg/80 rounded-xl px-4 py-2.5 shadow-sm border border-border-light">
-              <LockSVG />
-              <span className="text-[13px] font-semibold text-text-muted">
-                내일 열리는 미션
-              </span>
+      {tomorrowMission && tomorrowCategoryMeta && (
+        <div
+          className={`${mounted ? "animate-fade-in-up delay-700" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <div className="relative bg-bg-warm rounded-2xl px-5 py-4 border border-border-light overflow-hidden">
+            {/* Frosted overlay */}
+            <div className="absolute inset-0 bg-bg-warm/60 backdrop-blur-sm z-10 flex items-center justify-center">
+              <div className="flex items-center gap-2 bg-card-bg/80 rounded-xl px-4 py-2.5 shadow-sm border border-border-light">
+                <LockSVG />
+                <span className="text-[13px] font-semibold text-text-muted">
+                  내일 열리는 미션
+                </span>
+              </div>
             </div>
-          </div>
 
-          {/* Blurred content behind */}
-          <div className="opacity-40 blur-[2px]">
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ background: tomorrowCategoryMeta.color }}
-              />
-              <span className="text-[12px] font-medium text-text-secondary">
-                {tomorrowCategoryMeta.label}
-              </span>
+            {/* Blurred content behind */}
+            <div className="opacity-40 blur-[2px]">
+              <div className="flex items-center gap-2 mb-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full"
+                  style={{ background: tomorrowCategoryMeta.color }}
+                />
+                <span className="text-[12px] font-medium text-text-secondary">
+                  {tomorrowCategoryMeta.label}
+                </span>
+              </div>
+              <p className="text-[16px] font-bold text-navy">
+                {tomorrowMission.title}
+              </p>
+              <p className="text-[12px] text-text-muted mt-1">
+                역할: {tomorrowMission.role}
+              </p>
             </div>
-            <p className="text-[16px] font-bold text-navy">
-              {tomorrowMission.title}
-            </p>
-            <p className="text-[12px] text-text-muted mt-1">
-              역할: {tomorrowMission.role}
-            </p>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

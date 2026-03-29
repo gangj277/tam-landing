@@ -173,10 +173,10 @@ export default function HeroSection() {
           }`}
         >
           <a
-            href="#waitlist"
+            href="/signup"
             className="inline-flex items-center gap-2 bg-coral text-white text-[15px] font-semibold px-8 py-3.5 rounded-full hover:bg-coral-hover transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_4px_20px_rgba(232,97,77,0.3)] active:scale-[0.98]"
           >
-            얼리 액세스 신청하기
+            무료로 시작하기
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
                 d="M3 8h10M9 4l4 4-4 4"

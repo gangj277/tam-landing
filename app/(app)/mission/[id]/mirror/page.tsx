@@ -2,9 +2,8 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { getMissionById, SEOYEON_SESSION } from "@/lib/dummy-data";
-import type { Mission, ConversationMessage } from "@/lib/types";
-import { CATEGORY_META, DIFFICULTY_LABELS } from "@/lib/types";
+import { listSessions, getSession, ApiError } from "@/lib/api-client";
+import type { GeneratedMirror } from "@/lib/api-client";
 
 // ─── Mirror SVG Illustration ───
 function MirrorIllustration() {
@@ -237,15 +236,23 @@ const VALUE_TAG_LABELS: Record<string, string> = {
   emotion: "감정",
 };
 
+// ─── Mirror data shape extracted from session detail ───
+interface MirrorViewData {
+  observations: { text: string; valueTags: string[]; tone: string }[];
+  patternNote: string | null;
+  nextSuggestion: { reason: string; categoryHint: string } | null;
+  choiceQuote: string;
+}
+
 export default function MirrorPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const mission = getMissionById(id);
-  const session = SEOYEON_SESSION;
-  const mirror = session.mirror;
+  const [mirrorData, setMirrorData] = useState<MirrorViewData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [showTitle, setShowTitle] = useState(false);
   const [showQuote, setShowQuote] = useState(false);
@@ -253,8 +260,62 @@ export default function MirrorPage({
   const [showPattern, setShowPattern] = useState(false);
   const [showNext, setShowNext] = useState(false);
 
-  // Staggered reveal
+  // Fetch session + mirror data for this mission
   useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        // Find the most recent completed session for this mission
+        const { sessions } = await listSessions(50);
+        const matched = sessions.find((s) => s.missionId === id);
+        if (!matched) {
+          if (!cancelled) setMirrorData(null);
+          return;
+        }
+
+        // Get full session detail including mirror
+        const detail = await getSession(matched.sessionId);
+        if (cancelled) return;
+
+        const mirror = detail.mirror as GeneratedMirror | null;
+        if (!mirror) {
+          setMirrorData(null);
+          return;
+        }
+
+        // Extract child's quote from session data
+        const session = detail.session as Record<string, unknown>;
+        const closingResponse = (session.closingResponse as string) || "";
+        const reflectionNote = (session.reflectionNote as string) || "";
+
+        setMirrorData({
+          observations: mirror.observations,
+          patternNote: mirror.patternNote,
+          nextSuggestion: mirror.nextSuggestion,
+          choiceQuote:
+            closingResponse ||
+            reflectionNote ||
+            "오늘의 선택을 돌아보는 시간이에요.",
+        });
+      } catch (err) {
+        if (!cancelled) {
+          if (err instanceof ApiError && err.status === 401) {
+            setError("로그인이 필요해요. 다시 로그인해주세요.");
+          } else {
+            setError("결과를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  // Staggered reveal — only start after data is loaded
+  useEffect(() => {
+    if (loading || !mirrorData) return;
     const timers = [
       setTimeout(() => setShowTitle(true), 300),
       setTimeout(() => setShowQuote(true), 900),
@@ -263,9 +324,36 @@ export default function MirrorPage({
       setTimeout(() => setShowNext(true), 2800),
     ];
     return () => timers.forEach(clearTimeout);
-  }, []);
+  }, [loading, mirrorData]);
 
-  if (!mission || !mirror) {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-dvh">
+        <div className="text-center space-y-4 animate-fade-in-up">
+          <MirrorIllustration />
+          <p className="text-sm text-text-muted">거울을 비추는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-dvh">
+        <div className="text-center space-y-4 animate-fade-in-up">
+          <p className="text-lg font-semibold text-navy">{error}</p>
+          <Link
+            href="/home"
+            className="inline-block text-sm text-coral underline underline-offset-4"
+          >
+            홈으로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!mirrorData) {
     return (
       <div className="flex items-center justify-center min-h-dvh">
         <p className="text-text-muted">결과를 찾을 수 없어요</p>
@@ -273,18 +361,16 @@ export default function MirrorPage({
     );
   }
 
-  const observations = mirror.observations;
-  const choiceQuote =
-    session.choicesMade[0]?.reflectionNote ||
-    "지금 아픈 사람이 있는데 나중 일을 먼저 생각할 수는 없다고 했어.";
+  const observations = mirrorData.observations;
+  const choiceQuote = mirrorData.choiceQuote;
 
   const patternNote =
-    mirror.patternNote ||
-    "지난주보다 '다른 시각' 도구를 2번 더 써봤어. 다른 사람 입장도 궁금해하는 중인 것 같아!";
+    mirrorData.patternNote ||
+    "아직 패턴을 분석하기엔 이른 것 같아. 미션을 더 해보면 알 수 있을 거야!";
 
   const nextReason =
-    mirror.nextSuggestion?.reason ||
-    "내일은 다른 사람의 시각에서 생각해보는 미션이 기다리고 있어";
+    mirrorData.nextSuggestion?.reason ||
+    "내일은 또 다른 세계가 기다리고 있어";
 
   const OBSERVATION_ICONS = [HeartIcon, CompassIcon];
 

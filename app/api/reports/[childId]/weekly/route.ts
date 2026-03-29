@@ -1,0 +1,16 @@
+import { getWeeklyReportByChildId, requireAuth } from "@/lib/server/backend";
+import { handleRoute } from "@/lib/server/route";
+
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ childId: string }> },
+) {
+  return await handleRoute(async () => {
+    const auth = await requireAuth(request, { requireParent: true });
+    const { childId } = await context.params;
+    const week = new URL(request.url).searchParams.get("week") ?? undefined;
+    return {
+      report: await getWeeklyReportByChildId(auth, childId, week),
+    };
+  });
+}

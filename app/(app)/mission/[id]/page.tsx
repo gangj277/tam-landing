@@ -1,8 +1,9 @@
 "use client";
 
-import { use } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { getMissionById } from "@/lib/dummy-data";
+import { getMission, ApiError } from "@/lib/api-client";
+import type { MissionData } from "@/lib/api-client";
 import { CATEGORY_META, DIFFICULTY_LABELS } from "@/lib/types";
 
 // ─── Mars Dome Illustration ───
@@ -376,7 +377,63 @@ export default function MissionIntroPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const mission = getMissionById(id);
+  const [mission, setMission] = useState<MissionData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      try {
+        const data = await getMission(id);
+        if (!cancelled) {
+          setMission(data.mission);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          if (err instanceof ApiError && err.status === 401) {
+            setError("로그인이 필요해요. 다시 로그인해주세요.");
+          } else if (err instanceof ApiError && err.status === 404) {
+            setMission(null);
+          } else {
+            setError("미션을 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+          }
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-bg-cream">
+        <div className="text-center space-y-4 animate-fade-in-up">
+          <p className="text-5xl animate-breathe">🪐</p>
+          <p className="text-sm text-text-muted">세계를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-bg-cream">
+        <div className="text-center space-y-4 animate-fade-in-up">
+          <p className="text-5xl">⚠️</p>
+          <p className="text-lg font-semibold text-navy">{error}</p>
+          <Link
+            href="/home"
+            className="inline-block text-sm text-coral underline underline-offset-4"
+          >
+            홈으로 돌아가기
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!mission) {
     return (
@@ -397,8 +454,8 @@ export default function MissionIntroPage({
     );
   }
 
-  const categoryMeta = CATEGORY_META[mission.category];
-  const difficultyLabel = DIFFICULTY_LABELS[mission.difficulty];
+  const categoryMeta = CATEGORY_META[mission.category as keyof typeof CATEGORY_META];
+  const difficultyLabel = DIFFICULTY_LABELS[mission.difficulty as keyof typeof DIFFICULTY_LABELS];
   const isMars = mission.id === "mission-mars-mayor";
 
   return (

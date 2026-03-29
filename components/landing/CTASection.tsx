@@ -1,24 +1,14 @@
 "use client";
 
-import { useState } from "react";
 import { useInView } from "@/lib/useInView";
 
 export default function CTASection() {
   const { ref, isInView } = useInView(0.15);
-  const [email, setEmail] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email.trim()) {
-      setSubmitted(true);
-    }
-  };
 
   return (
     <section
       ref={ref}
-      id="waitlist"
+      id="cta"
       className="relative py-24 md:py-32 px-6 overflow-hidden"
     >
       {/* Warm gradient background */}
@@ -47,63 +37,38 @@ export default function CTASection() {
           }`}
           style={{ transitionDelay: "150ms" }}
         >
-          먼저 경험해보실 분들을 모집하고 있습니다.
+          매일 5분, 새로운 세계에서 생각하는 힘을 키워보세요.
           <br />
-          얼리 액세스에 등록하시면, 출시 즉시 무료로 초대해 드립니다.
+          지금 가입하면 무료로 시작할 수 있습니다.
         </p>
 
-        {/* Email form */}
+        {/* CTA Button */}
         <div
           className={`transition-all duration-700 ${
             isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
           style={{ transitionDelay: "300ms" }}
         >
-          {!submitted ? (
-            <form onSubmit={handleSubmit} className="mb-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="이메일 주소를 입력하세요"
-                  required
-                  className="flex-1 px-5 py-3.5 rounded-full bg-card-bg border border-border-light text-[15px] text-navy placeholder:text-text-muted/60 focus:outline-none focus:border-coral/40 focus:shadow-[0_0_0_3px_rgba(232,97,77,0.08)] transition-all duration-200"
-                />
-                <button
-                  type="submit"
-                  className="px-7 py-3.5 rounded-full bg-coral text-white text-[15px] font-semibold hover:bg-coral-hover transition-all duration-300 hover:shadow-[0_4px_20px_rgba(232,97,77,0.3)] active:scale-[0.97] flex-shrink-0"
-                >
-                  얼리 액세스 신청
-                </button>
-              </div>
-            </form>
-          ) : (
-            <div className="animate-fade-in mb-6 p-5 rounded-2xl bg-card-bg border border-coral/10">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <circle cx="10" cy="10" r="8" fill="#E8614D" fillOpacity="0.1" stroke="#E8614D" strokeWidth="1.5" />
-                  <path d="M7 10l2 2 4-4" stroke="#E8614D" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <span className="text-[15px] font-semibold text-navy">
-                  신청이 완료되었습니다!
-                </span>
-              </div>
-              <p className="text-[13px] text-text-secondary">
-                출시 소식을 가장 먼저 알려드릴게요.
-              </p>
-            </div>
-          )}
-
-          {/* Social proof */}
-          <p className="text-[13px] text-text-muted mb-4">
-            현재{" "}
-            <span className="font-semibold text-coral">1,247</span>명의
-            부모님이 대기 중입니다
-          </p>
+          <a
+            href="/signup"
+            className="inline-flex items-center gap-2 px-10 py-4 rounded-full bg-coral text-white text-[16px] font-semibold hover:bg-coral-hover transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_4px_20px_rgba(232,97,77,0.3)] active:scale-[0.97]"
+          >
+            무료로 시작하기
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M4 9h10M10 5l4 4-4 4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </a>
 
           {/* Trust badges */}
-          <div className="flex items-center justify-center gap-4 text-[12px] text-text-muted/80">
+          <div className="flex items-center justify-center gap-4 text-[12px] text-text-muted/80 mt-6">
+            <span className="flex items-center gap-1">
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1" />
+                <path d="M4 6l1.5 1.5L8 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              30초 안에 가입
+            </span>
+            <span className="w-[1px] h-3 bg-border-light" />
             <span className="flex items-center gap-1">
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1" />
@@ -118,14 +83,6 @@ export default function CTASection() {
                 <path d="M4 6l1.5 1.5L8 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               언제든 취소 가능
-            </span>
-            <span className="w-[1px] h-3 bg-border-light" />
-            <span className="flex items-center gap-1">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <circle cx="6" cy="6" r="4" stroke="currentColor" strokeWidth="1" />
-                <path d="M4 6l1.5 1.5L8 5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              스팸 없음
             </span>
           </div>
         </div>

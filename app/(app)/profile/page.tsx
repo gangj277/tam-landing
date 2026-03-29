@@ -1,8 +1,14 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { SEOYEON_PROFILE, PAST_SESSIONS } from "@/lib/dummy-data";
-import type { DiscoveryInsight, MissionCategory } from "@/lib/types";
+import {
+  getFamilyMe,
+  getProfile,
+  listSessions,
+  ApiError,
+} from "@/lib/api-client";
+import type { ProfileData, PastSessionItem } from "@/lib/api-client";
+import type { MissionCategory } from "@/lib/types";
 import { CATEGORY_META } from "@/lib/types";
 
 /* ─── SVG Icons for Discovery Insights ─── */
@@ -162,10 +168,10 @@ const INSIGHT_BORDER_COLORS: Record<string, string> = {
   "선호하는 분위기": "#E8614D",
 };
 
-function ConfidenceBar({ confidence }: { confidence: "low" | "medium" | "high" }) {
-  const levels = { low: 1, medium: 2, high: 3 };
-  const level = levels[confidence];
-  const labels = { low: "탐색 중", medium: "윤곽이 보여요", high: "꽤 확실해요" };
+function ConfidenceBar({ confidence }: { confidence: string }) {
+  const levels: Record<string, number> = { low: 1, medium: 2, high: 3 };
+  const level = levels[confidence] ?? 1;
+  const labels: Record<string, string> = { low: "탐색 중", medium: "윤곽이 보여요", high: "꽤 확실해요" };
 
   return (
     <div className="flex items-center gap-2 mt-2">
@@ -182,12 +188,12 @@ function ConfidenceBar({ confidence }: { confidence: "low" | "medium" | "high" }
           />
         ))}
       </div>
-      <span className="text-[10px] text-text-muted">{labels[confidence]}</span>
+      <span className="text-[10px] text-text-muted">{labels[confidence] ?? "탐색 중"}</span>
     </div>
   );
 }
 
-function TrendArrowSVG({ trend }: { trend: "up" | "stable" | "exploring" }) {
+function TrendArrowSVG({ trend }: { trend: string }) {
   if (trend === "up") {
     return (
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -241,17 +247,98 @@ function ClockSVG() {
   );
 }
 
+/* ─── Loading Skeleton ─── */
+
+function ProfileSkeleton() {
+  return (
+    <div className="px-5 pt-14 pb-6 animate-pulse">
+      <div className="mb-7">
+        <div className="h-6 w-40 bg-bg-warm rounded mb-2" />
+        <div className="h-3 w-52 bg-bg-warm rounded mb-4" />
+        <div className="flex gap-3">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="flex-1 bg-card-bg rounded-2xl px-4 py-3 border border-border-light text-center">
+              <div className="h-5 w-5 bg-bg-warm rounded mx-auto mb-1.5" />
+              <div className="h-6 w-10 bg-bg-warm rounded mx-auto mb-1" />
+              <div className="h-3 w-12 bg-bg-warm rounded mx-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="mb-8">
+        <div className="h-5 w-36 bg-bg-warm rounded mb-2" />
+        <div className="h-3 w-52 bg-bg-warm rounded mb-4" />
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="bg-card-bg rounded-2xl px-4 py-4 border border-border-light mb-3">
+            <div className="flex items-start gap-3">
+              <div className="w-8 h-8 bg-bg-warm rounded" />
+              <div className="flex-1">
+                <div className="h-4 w-28 bg-bg-warm rounded mb-2" />
+                <div className="h-3 w-full bg-bg-warm rounded" />
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Discovery Insight type (from API) ─── */
+
+interface DiscoveryInsight {
+  label: string;
+  summary: string;
+  dataPoints: number;
+  confidence: string;
+  icon: string;
+}
+
 /* ─── Component ─── */
 
 export default function ProfilePage() {
-  const profile = SEOYEON_PROFILE;
-  const discoveries = Object.values(profile.discoveries) as DiscoveryInsight[];
   const [mounted, setMounted] = useState(false);
   const [barsVisible, setBarsVisible] = useState(false);
   const barSectionRef = useRef<HTMLDivElement>(null);
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [childName, setChildName] = useState("");
+  const [sessions, setSessions] = useState<PastSessionItem[]>([]);
+
   useEffect(() => {
     setMounted(true);
+
+    async function loadData() {
+      try {
+        const family = await getFamilyMe();
+        setChildName(family.activeChild.name);
+
+        const [profileRes, sessionsRes] = await Promise.all([
+          getProfile(family.activeChildId),
+          listSessions(10),
+        ]);
+
+        setProfile(profileRes.profile);
+        setSessions(sessionsRes.sessions);
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 401) {
+          setError("로그인이 필요해요");
+        } else {
+          setError("데이터를 불러오지 못했어요. 잠시 후 다시 시도해주세요.");
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    if (!barSectionRef.current) return;
 
     const observer = new IntersectionObserver(
       ([entry]) => {
@@ -263,13 +350,43 @@ export default function ProfilePage() {
     );
 
     const currentRef = barSectionRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
+    observer.observe(currentRef);
     return () => {
-      if (currentRef) observer.unobserve(currentRef);
+      observer.unobserve(currentRef);
     };
-  }, []);
+  }, [loading]);
+
+  if (loading) {
+    return <ProfileSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="text-[48px] mb-4">
+          {error === "로그인이 필요해요" ? "🔒" : "😢"}
+        </div>
+        <p className="text-[16px] font-bold text-navy mb-2">{error}</p>
+        <p className="text-[13px] text-text-muted text-center">
+          {error === "로그인이 필요해요"
+            ? "탐험 기록을 보려면 먼저 로그인해주세요."
+            : "네트워크 연결을 확인하고 다시 시도해주세요."}
+        </p>
+      </div>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
+        <p className="text-[16px] font-bold text-navy mb-2">프로필을 준비 중이에요</p>
+        <p className="text-[13px] text-text-muted">잠시만 기다려주세요.</p>
+      </div>
+    );
+  }
+
+  const discoveries = Object.values(profile.discoveries) as DiscoveryInsight[];
+  const totalDays = profile.stats.totalMissions;
 
   return (
     <div className="page-enter px-5 pt-14 pb-6">
@@ -278,10 +395,10 @@ export default function ProfilePage() {
         className={`mb-7 ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
       >
         <h1 className="text-[22px] font-bold text-navy tracking-tight mb-1">
-          서연의 탐험 기록
+          {childName}의 탐험 기록
         </h1>
         <p className="text-[13px] text-text-muted">
-          7일간의 여정에서 발견한 것들
+          {totalDays}일간의 여정에서 발견한 것들
         </p>
 
         {/* Stats row */}
@@ -314,178 +431,184 @@ export default function ProfilePage() {
       </div>
 
       {/* ── Discovery Insights ── */}
-      <div
-        className={`mb-8 ${mounted ? "animate-fade-in-up delay-200" : "opacity-0"}`}
-        style={{ animationFillMode: "both" }}
-      >
-        <h2 className="text-[15px] font-bold text-navy mb-1">
-          나는 이런 사람인 것 같아
-        </h2>
-        <p className="text-[12px] text-text-muted mb-4">
-          탐험하면서 조금씩 보이기 시작한 나의 모습
-        </p>
+      {discoveries.length > 0 && (
+        <div
+          className={`mb-8 ${mounted ? "animate-fade-in-up delay-200" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            나는 이런 사람인 것 같아
+          </h2>
+          <p className="text-[12px] text-text-muted mb-4">
+            탐험하면서 조금씩 보이기 시작한 나의 모습
+          </p>
 
-        <div className="flex flex-col gap-3">
-          {discoveries.map((insight, idx) => {
-            const IconComponent = INSIGHT_ICONS[insight.label] || WorldPreferenceSVG;
-            const borderColor = INSIGHT_BORDER_COLORS[insight.label] || "#4A5FC1";
+          <div className="flex flex-col gap-3">
+            {discoveries.map((insight, idx) => {
+              const IconComponent = INSIGHT_ICONS[insight.label] || WorldPreferenceSVG;
+              const borderColor = INSIGHT_BORDER_COLORS[insight.label] || "#4A5FC1";
 
-            return (
-              <div
-                key={insight.label}
-                className={`bg-card-bg rounded-2xl px-4 py-4 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
-                style={{
-                  borderLeft: `3px solid ${borderColor}`,
-                  animationDelay: `${300 + idx * 100}ms`,
-                  animationFillMode: "both",
-                }}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="shrink-0 mt-0.5">
-                    <IconComponent />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-navy mb-0.5">
-                      {insight.label}
-                    </p>
-                    <p className="text-[12px] text-text-secondary leading-relaxed">
-                      {insight.summary}
-                    </p>
-                    <ConfidenceBar confidence={insight.confidence} />
-                  </div>
-                  <span className="text-[10px] text-text-muted shrink-0 mt-1 bg-bg-warm px-1.5 py-0.5 rounded">
-                    {insight.dataPoints}회
-                  </span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ── Interest Map ── */}
-      <div
-        ref={barSectionRef}
-        className={`mb-8 ${mounted ? "animate-fade-in-up delay-500" : "opacity-0"}`}
-        style={{ animationFillMode: "both" }}
-      >
-        <h2 className="text-[15px] font-bold text-navy mb-1">
-          관심 영역 지도
-        </h2>
-        <p className="text-[12px] text-text-muted mb-4">
-          어떤 분야에 끌리는지 점점 그림이 그려지고 있어
-        </p>
-
-        <div className="bg-card-bg rounded-2xl px-5 py-5 border border-border-light shadow-sm">
-          <div className="flex flex-col gap-5">
-            {profile.interestMap.map((area, idx) => (
-              <div key={area.category}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] font-semibold text-navy">
-                    {area.category}
-                  </span>
-                  <div className="flex items-center gap-1.5">
-                    <TrendArrowSVG trend={area.trend} />
-                    <span className="text-[11px] text-text-muted">
-                      {TREND_LABELS[area.trend]}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 h-3 bg-bg-warm rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: barsVisible ? `${area.score}%` : "0%",
-                        background: BAR_COLORS[idx],
-                        transition: `width 1s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 150}ms`,
-                        opacity: 0.75,
-                      }}
-                    />
-                  </div>
-                  <span
-                    className="text-[13px] font-bold w-10 text-right"
-                    style={{ color: BAR_COLORS[idx] }}
-                  >
-                    {area.score}%
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── Recent Explorations Timeline ── */}
-      <div
-        className={`${mounted ? "animate-fade-in-up delay-600" : "opacity-0"}`}
-        style={{ animationFillMode: "both" }}
-      >
-        <h2 className="text-[15px] font-bold text-navy mb-1">
-          최근 탐험 기록
-        </h2>
-        <p className="text-[12px] text-text-muted mb-4">
-          지금까지의 발자취
-        </p>
-
-        <div className="relative">
-          {/* Timeline line */}
-          <div className="absolute left-[11px] top-3 bottom-3 w-[1.5px] bg-border-light" />
-
-          <div className="flex flex-col gap-0">
-            {PAST_SESSIONS.map((session, idx) => {
-              const sessCategoryMeta = CATEGORY_META[session.category as MissionCategory];
               return (
                 <div
-                  key={session.missionId}
-                  className={`relative flex items-start gap-4 py-3.5 ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                  key={insight.label}
+                  className={`bg-card-bg rounded-2xl px-4 py-4 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
                   style={{
-                    animationDelay: `${700 + idx * 80}ms`,
+                    borderLeft: `3px solid ${borderColor}`,
+                    animationDelay: `${300 + idx * 100}ms`,
                     animationFillMode: "both",
                   }}
                 >
-                  {/* Timeline dot */}
-                  <div
-                    className="relative z-10 w-[23px] h-[23px] rounded-full border-2 flex items-center justify-center shrink-0 bg-card-bg"
-                    style={{ borderColor: sessCategoryMeta.color }}
-                  >
-                    <div
-                      className="w-2 h-2 rounded-full"
-                      style={{ background: sessCategoryMeta.color, opacity: 0.7 }}
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0 -mt-0.5">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[13px] font-semibold text-navy truncate">
-                        {session.title}
-                      </span>
+                  <div className="flex items-start gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      <IconComponent />
                     </div>
-                    <p className="text-[11px] text-text-muted mb-1">
-                      {session.choiceSummary}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className="text-[10px] font-medium px-2 py-0.5 rounded-md"
-                        style={{
-                          background: sessCategoryMeta.lightBg,
-                          color: sessCategoryMeta.color,
-                        }}
-                      >
-                        {sessCategoryMeta.label}
-                      </span>
-                      <span className="text-[10px] text-text-muted">
-                        {session.completedAt}
-                      </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-bold text-navy mb-0.5">
+                        {insight.label}
+                      </p>
+                      <p className="text-[12px] text-text-secondary leading-relaxed">
+                        {insight.summary}
+                      </p>
+                      <ConfidenceBar confidence={insight.confidence} />
                     </div>
+                    <span className="text-[10px] text-text-muted shrink-0 mt-1 bg-bg-warm px-1.5 py-0.5 rounded">
+                      {insight.dataPoints}회
+                    </span>
                   </div>
                 </div>
               );
             })}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* ── Interest Map ── */}
+      {profile.interestMap.length > 0 && (
+        <div
+          ref={barSectionRef}
+          className={`mb-8 ${mounted ? "animate-fade-in-up delay-500" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            관심 영역 지도
+          </h2>
+          <p className="text-[12px] text-text-muted mb-4">
+            어떤 분야에 끌리는지 점점 그림이 그려지고 있어
+          </p>
+
+          <div className="bg-card-bg rounded-2xl px-5 py-5 border border-border-light shadow-sm">
+            <div className="flex flex-col gap-5">
+              {profile.interestMap.map((area, idx) => (
+                <div key={area.category}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[13px] font-semibold text-navy">
+                      {area.category}
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <TrendArrowSVG trend={area.trend} />
+                      <span className="text-[11px] text-text-muted">
+                        {TREND_LABELS[area.trend] ?? area.trend}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-3 bg-bg-warm rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: barsVisible ? `${area.score}%` : "0%",
+                          background: BAR_COLORS[idx % BAR_COLORS.length],
+                          transition: `width 1s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 150}ms`,
+                          opacity: 0.75,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="text-[13px] font-bold w-10 text-right"
+                      style={{ color: BAR_COLORS[idx % BAR_COLORS.length] }}
+                    >
+                      {area.score}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Recent Explorations Timeline ── */}
+      {sessions.length > 0 && (
+        <div
+          className={`${mounted ? "animate-fade-in-up delay-600" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            최근 탐험 기록
+          </h2>
+          <p className="text-[12px] text-text-muted mb-4">
+            지금까지의 발자취
+          </p>
+
+          <div className="relative">
+            {/* Timeline line */}
+            <div className="absolute left-[11px] top-3 bottom-3 w-[1.5px] bg-border-light" />
+
+            <div className="flex flex-col gap-0">
+              {sessions.map((session, idx) => {
+                const sessCategoryMeta = CATEGORY_META[session.category as MissionCategory];
+                return (
+                  <div
+                    key={session.sessionId}
+                    className={`relative flex items-start gap-4 py-3.5 ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                    style={{
+                      animationDelay: `${700 + idx * 80}ms`,
+                      animationFillMode: "both",
+                    }}
+                  >
+                    {/* Timeline dot */}
+                    <div
+                      className="relative z-10 w-[23px] h-[23px] rounded-full border-2 flex items-center justify-center shrink-0 bg-card-bg"
+                      style={{ borderColor: sessCategoryMeta.color }}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: sessCategoryMeta.color, opacity: 0.7 }}
+                      />
+                    </div>
+
+                    <div className="flex-1 min-w-0 -mt-0.5">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-[13px] font-semibold text-navy truncate">
+                          {session.missionTitle}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-text-muted mb-1">
+                        {session.choiceSummary}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="text-[10px] font-medium px-2 py-0.5 rounded-md"
+                          style={{
+                            background: sessCategoryMeta.lightBg,
+                            color: sessCategoryMeta.color,
+                          }}
+                        >
+                          {sessCategoryMeta.label}
+                        </span>
+                        <span className="text-[10px] text-text-muted">
+                          {session.completedAt}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

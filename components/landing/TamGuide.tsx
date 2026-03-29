@@ -206,10 +206,10 @@ export default function TamGuide() {
               </div>
             </div>
             <a
-              href="#waitlist"
+              href="/signup"
               className="inline-flex items-center gap-2 bg-coral text-white text-[15px] font-semibold px-8 py-3.5 rounded-full hover:bg-coral-hover transition-all duration-300 hover:shadow-[0_4px_20px_rgba(232,97,77,0.3)] active:scale-[0.98]"
             >
-              상담 신청하기
+              무료로 시작하기
             </a>
           </div>
 
