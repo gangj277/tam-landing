@@ -71,8 +71,14 @@ export default function Navbar() {
           </div>
         </a>
 
-        {/* Auth buttons */}
+        {/* Nav buttons */}
         <div className="flex items-center gap-2">
+          <a
+            href="/quiz"
+            className="text-[13px] font-medium px-4 py-2 rounded-full text-coral hover:text-coral-hover transition-colors hidden sm:block"
+          >
+            무료 진단
+          </a>
           <a
             href="/login"
             className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"

@@ -187,6 +187,15 @@ export default function HeroSection() {
               />
             </svg>
           </a>
+          <a
+            href="/quiz"
+            className={`block mt-4 text-[13px] font-medium text-text-secondary hover:text-coral transition-colors duration-300 ${
+              mounted ? "opacity-100" : "opacity-0"
+            }`}
+            style={{ transitionDelay: "700ms" }}
+          >
+            먼저 1분 무료 진단 해보기 →
+          </a>
         </div>
       </div>
 
