@@ -171,6 +171,13 @@ export default function SignupPage() {
               >
                 다음
               </button>
+
+              <p className="text-center text-[13px] text-text-muted">
+                이미 계정이 있으신가요?{" "}
+                <a href="/login" className="font-semibold text-indigo hover:underline">
+                  로그인
+                </a>
+              </p>
             </div>
           )}
 

@@ -71,17 +71,25 @@ export default function Navbar() {
           </div>
         </a>
 
-        {/* CTA */}
-        <a
-          href="/signup"
-          className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 ${
-            scrolled
-              ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
-              : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
-          }`}
-        >
-          시작하기
-        </a>
+        {/* Auth buttons */}
+        <div className="flex items-center gap-2">
+          <a
+            href="/login"
+            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"
+          >
+            로그인
+          </a>
+          <a
+            href="/signup"
+            className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 ${
+              scrolled
+                ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
+                : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
+            }`}
+          >
+            시작하기
+          </a>
+        </div>
       </div>
     </nav>
   );
