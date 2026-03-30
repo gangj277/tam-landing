@@ -136,6 +136,18 @@ export const profiles = pgTable("profiles", {
   updatedAt: text("updated_at").notNull(),
 });
 
+export const dailyChoiceSets = pgTable("daily_choice_sets", {
+  id: text("id").primaryKey(),
+  childId: text("child_id").notNull(),
+  choiceDate: text("choice_date").notNull(),
+  previews: jsonb("previews").notNull(),
+  chosenIndex: integer("chosen_index"),
+  chosenMissionId: text("chosen_mission_id"),
+  strategy: jsonb("strategy").notNull(),
+  createdAt: text("created_at").notNull(),
+  chosenAt: text("chosen_at"),
+});
+
 export const weeklyReports = pgTable("weekly_reports", {
   id: text("id").primaryKey(),
   childId: text("child_id").notNull(),

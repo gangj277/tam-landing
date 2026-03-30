@@ -127,8 +127,30 @@ export interface MissionData {
   ageRange: [number, number];
 }
 
+export interface MissionPreviewData {
+  index: number;
+  title: string;
+  role: string;
+  category: string;
+  worldLocation: string;
+  era: string;
+  pitch: string;
+}
+
+export type TodayMissionResponse =
+  | { status: "sequence"; mission: MissionData; reason: string }
+  | { status: "choosing"; previews: MissionPreviewData[]; choiceSetId: string }
+  | { status: "chosen"; mission: MissionData; reason: string };
+
 export async function getTodayMission() {
-  return request<{ mission: MissionData; reason: string }>("/missions/today");
+  return request<TodayMissionResponse>("/missions/today");
+}
+
+export async function chooseTodayMission(chosenIndex: number) {
+  return request<{ mission: MissionData; reason: string }>("/missions/today/choose", {
+    method: "POST",
+    body: JSON.stringify({ chosenIndex }),
+  });
 }
 
 export async function getTomorrowMission() {

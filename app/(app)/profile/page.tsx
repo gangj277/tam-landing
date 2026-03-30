@@ -223,7 +223,7 @@ const TREND_LABELS: Record<string, string> = {
   exploring: "탐색 중",
 };
 
-const BAR_COLORS = ["#4A5FC1", "#E8614D", "#D4A853", "#4A5FC1"];
+const BAR_COLORS = ["#E8614D", "#4A5FC1", "#D4A853", "#6B8F71", "#7C6FAF", "#E09145", "#5B9EA6"];
 
 /* ─── Stats Icons ─── */
 

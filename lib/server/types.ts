@@ -227,6 +227,30 @@ export interface MissionAssignment {
   createdAt: string;
 }
 
+export interface MissionPreview {
+  index: number;
+  title: string;
+  role: string;
+  category: MissionCategory;
+  difficulty: DifficultyType;
+  worldLocation: string;
+  era: string;
+  pitch: string;
+  slot: "fit" | "stretch" | "reveal";
+}
+
+export interface DailyChoiceSet {
+  id: string;
+  childId: string;
+  choiceDate: string;
+  previews: MissionPreview[];
+  chosenIndex: number | null;
+  chosenMissionId: string | null;
+  strategy: { fit: number; stretch: number; reveal: number };
+  createdAt: string;
+  chosenAt: string | null;
+}
+
 export interface DiscoveryInsight {
   label: string;
   summary: string;

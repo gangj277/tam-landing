@@ -6,6 +6,7 @@ import {
   getFamilyMe,
   getTodayMission as fetchTodayMission,
   getTomorrowMission as fetchTomorrowMission,
+  chooseTodayMission,
   listSessions,
   getProfile,
   ApiError,
@@ -13,8 +14,10 @@ import {
 import type {
   FamilyMe,
   MissionData,
+  MissionPreviewData,
   PastSessionItem,
   ProfileData,
+  TodayMissionResponse,
 } from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
 import type { MissionCategory } from "@/lib/types";
@@ -344,20 +347,19 @@ export default function HomePage() {
   // Data states
   const [childName, setChildName] = useState("");
   const [streak, setStreak] = useState(0);
-  const [todayMission, setTodayMission] = useState<MissionData | null>(null);
+  const [todayResponse, setTodayResponse] = useState<TodayMissionResponse | null>(null);
   const [tomorrowMission, setTomorrowMission] = useState<MissionData | null>(null);
   const [pastSessions, setPastSessions] = useState<PastSessionItem[]>([]);
+  const [choosingIndex, setChoosingIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setMounted(true);
 
     async function loadData() {
       try {
-        // Fetch family info first to get activeChildId
         const family = await getFamilyMe();
         setChildName(family.activeChild.name);
 
-        // Fetch remaining data in parallel
         const [todayRes, sessionsRes, profileRes, tomorrowRes] = await Promise.all([
           fetchTodayMission(),
           listSessions(6),
@@ -365,7 +367,7 @@ export default function HomePage() {
           fetchTomorrowMission().catch(() => null),
         ]);
 
-        setTodayMission(todayRes.mission);
+        setTodayResponse(todayRes);
         setPastSessions(sessionsRes.sessions);
         setStreak(profileRes.profile.stats.currentStreak);
         if (tomorrowRes) {
@@ -384,6 +386,17 @@ export default function HomePage() {
 
     loadData();
   }, []);
+
+  async function handleChoosePreview(index: number) {
+    if (choosingIndex !== null) return;
+    setChoosingIndex(index);
+    try {
+      const result = await chooseTodayMission(index);
+      setTodayResponse({ status: "chosen", mission: result.mission, reason: result.reason });
+    } catch {
+      setChoosingIndex(null);
+    }
+  }
 
   if (loading) {
     return <HomeSkeleton />;
@@ -405,7 +418,7 @@ export default function HomePage() {
     );
   }
 
-  if (!todayMission) {
+  if (!todayResponse) {
     return (
       <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
         <p className="text-[16px] font-bold text-navy mb-2">오늘의 미션을 준비 중이에요</p>
@@ -414,13 +427,15 @@ export default function HomePage() {
     );
   }
 
-  const categoryMeta = CATEGORY_META[todayMission.category as MissionCategory];
+  // Extract mission for "sequence" and "chosen" statuses
+  const todayMission = todayResponse.status !== "choosing" ? todayResponse.mission : null;
+  const categoryMeta = todayMission ? CATEGORY_META[todayMission.category as MissionCategory] : null;
   const tomorrowCategoryMeta = tomorrowMission
     ? CATEGORY_META[tomorrowMission.category as MissionCategory]
     : null;
-  const isTodayCompleted = pastSessions.some(
-    (s) => s.missionId === todayMission.id,
-  );
+  const isTodayCompleted = todayMission
+    ? pastSessions.some((s) => s.missionId === todayMission.id)
+    : false;
 
   return (
     <div className="page-enter px-5 pt-14 pb-6">
@@ -452,95 +467,169 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* ── Today's Mission Card (Hero) ── */}
+      {/* ── Today's Mission Section ── */}
       <div
         className={`mb-7 ${mounted ? "animate-fade-in-up delay-200" : "opacity-0"}`}
         style={{ animationFillMode: "both" }}
       >
-        <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-2.5">
-          오늘의 미션
-        </p>
+        {todayResponse.status === "choosing" ? (
+          <>
+            {/* ── 3 Preview Cards (Day 8+) ── */}
+            <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-1">
+              오늘의 미션
+            </p>
+            <h2 className="text-[18px] font-bold text-navy mb-4">
+              어떤 세계에 들어갈까?
+            </h2>
 
-        <Link href={isTodayCompleted ? `/mission/${todayMission.id}/mirror` : `/mission/${todayMission.id}`} className="block tap-highlight">
-          <div className={`bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border overflow-hidden ${isTodayCompleted ? "border-[#A5D6A7]" : "border-border-light"}`}>
-            {/* Category color band */}
-            <div
-              className="h-1.5"
-              style={{
-                background: isTodayCompleted
-                  ? "linear-gradient(90deg, #66BB6A, #66BB6Aaa, #66BB6A44)"
-                  : `linear-gradient(90deg, ${categoryMeta.color}, ${categoryMeta.color}88, ${categoryMeta.color}44)`,
-              }}
-            />
+            <div className="flex flex-col gap-3">
+              {todayResponse.previews.map((preview, idx) => {
+                const previewMeta = CATEGORY_META[preview.category as MissionCategory];
+                const isSelecting = choosingIndex === idx;
+                const isDisabled = choosingIndex !== null && choosingIndex !== idx;
 
-            {/* Mars Illustration */}
-            <div className="px-4 pt-3">
-              <MarsCitySVG />
+                return (
+                  <button
+                    key={idx}
+                    onClick={() => handleChoosePreview(idx)}
+                    disabled={choosingIndex !== null}
+                    className={`text-left bg-card-bg rounded-2xl border overflow-hidden shadow-sm transition-all ${
+                      isSelecting
+                        ? "border-coral shadow-md scale-[1.01]"
+                        : isDisabled
+                          ? "border-border-light opacity-50"
+                          : "border-border-light active:scale-[0.98] active:shadow-md"
+                    }`}
+                    style={{
+                      borderLeftWidth: "3px",
+                      borderLeftColor: previewMeta.color,
+                    }}
+                  >
+                    <div className="px-4 py-4">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded-md"
+                          style={{
+                            background: previewMeta.lightBg,
+                            color: previewMeta.color,
+                          }}
+                        >
+                          {previewMeta.label}
+                        </span>
+                        <span className="text-[10px] text-text-muted">
+                          {preview.era} &middot; {preview.worldLocation}
+                        </span>
+                      </div>
+
+                      <h3 className="text-[16px] font-bold text-navy leading-snug mb-0.5">
+                        {preview.title}
+                      </h3>
+                      <p className="text-[13px] text-text-secondary mb-1.5">
+                        역할: {preview.role}
+                      </p>
+                      <p className="text-[12px] text-text-muted italic">
+                        {preview.pitch}
+                      </p>
+
+                      {isSelecting && (
+                        <div className="mt-3 flex items-center gap-2 text-coral">
+                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                            <path d="M7 1a6 6 0 0 1 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                          <span className="text-[12px] font-semibold">세계를 만들고 있어...</span>
+                        </div>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
             </div>
+          </>
+        ) : todayMission && categoryMeta ? (
+          <>
+            {/* ── Single Mission Card (Day 1-7 or already chosen) ── */}
+            <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-2.5">
+              오늘의 미션
+            </p>
 
-            {/* Mission Content */}
-            <div className="px-5 pb-5 pt-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+            <Link href={isTodayCompleted ? `/mission/${todayMission.id}/mirror` : `/mission/${todayMission.id}`} className="block tap-highlight">
+              <div className={`bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border overflow-hidden ${isTodayCompleted ? "border-[#A5D6A7]" : "border-border-light"}`}>
+                <div
+                  className="h-1.5"
                   style={{
-                    background: categoryMeta.lightBg,
-                    color: categoryMeta.color,
+                    background: isTodayCompleted
+                      ? "linear-gradient(90deg, #66BB6A, #66BB6Aaa, #66BB6A44)"
+                      : `linear-gradient(90deg, ${categoryMeta.color}, ${categoryMeta.color}88, ${categoryMeta.color}44)`,
                   }}
-                >
-                  {categoryMeta.label}
-                </span>
-                <span className="text-[11px] text-text-muted">
-                  {todayMission.worldSetting.era} &middot; {todayMission.worldSetting.location}
-                </span>
-              </div>
+                />
 
-              <h2 className="text-[20px] font-bold text-navy leading-snug mb-1">
-                {todayMission.title}
-              </h2>
-              <p className="text-[14px] text-text-secondary font-medium mb-3">
-                역할: {todayMission.role}
-              </p>
-
-              <p className="text-[13px] text-text-muted leading-relaxed mb-5 line-clamp-2">
-                {todayMission.situation}
-              </p>
-
-              {/* CTA Button */}
-              {isTodayCompleted ? (
-                <div className="w-full flex items-center justify-center gap-2 bg-[#E8F5E9] text-[#2E7D32] font-bold text-[15px] py-3.5 rounded-xl">
-                  <CheckSVG color="#2E7D32" />
-                  탐험 돌아보기
+                <div className="px-4 pt-3">
+                  <MarsCitySVG />
                 </div>
-              ) : (
-                <button className="w-full bg-coral text-white font-bold text-[15px] py-3.5 rounded-xl active:bg-coral-hover transition-colors">
-                  세계에 들어가기
-                </button>
-              )}
 
-              {/* Tags + Time */}
-              <div className="flex items-center justify-between mt-4">
-                <div className="flex flex-wrap gap-1.5">
-                  {todayMission.tags.slice(0, 3).map((tag) => (
+                <div className="px-5 pb-5 pt-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <span
-                      key={tag}
-                      className="text-[11px] text-text-muted bg-bg-warm px-2 py-0.5 rounded-md"
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg"
+                      style={{
+                        background: categoryMeta.lightBg,
+                        color: categoryMeta.color,
+                      }}
                     >
-                      #{tag}
+                      {categoryMeta.label}
                     </span>
-                  ))}
+                    <span className="text-[11px] text-text-muted">
+                      {todayMission.worldSetting.era} &middot; {todayMission.worldSetting.location}
+                    </span>
+                  </div>
+
+                  <h2 className="text-[20px] font-bold text-navy leading-snug mb-1">
+                    {todayMission.title}
+                  </h2>
+                  <p className="text-[14px] text-text-secondary font-medium mb-3">
+                    역할: {todayMission.role}
+                  </p>
+
+                  <p className="text-[13px] text-text-muted leading-relaxed mb-5 line-clamp-2">
+                    {todayMission.situation}
+                  </p>
+
+                  {isTodayCompleted ? (
+                    <div className="w-full flex items-center justify-center gap-2 bg-[#E8F5E9] text-[#2E7D32] font-bold text-[15px] py-3.5 rounded-xl">
+                      <CheckSVG color="#2E7D32" />
+                      탐험 돌아보기
+                    </div>
+                  ) : (
+                    <button className="w-full bg-coral text-white font-bold text-[15px] py-3.5 rounded-xl active:bg-coral-hover transition-colors">
+                      세계에 들어가기
+                    </button>
+                  )}
+
+                  <div className="flex items-center justify-between mt-4">
+                    <div className="flex flex-wrap gap-1.5">
+                      {todayMission.tags.slice(0, 3).map((tag) => (
+                        <span
+                          key={tag}
+                          className="text-[11px] text-text-muted bg-bg-warm px-2 py-0.5 rounded-md"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                    <span className="text-[11px] text-text-muted flex items-center gap-1">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                        <circle cx="6" cy="6" r="5" stroke="#8A8A9A" strokeWidth="1" />
+                        <path d="M6 3.5V6.5L8 7.5" stroke="#8A8A9A" strokeWidth="1" strokeLinecap="round" />
+                      </svg>
+                      약 {todayMission.estimatedMinutes}분
+                    </span>
+                  </div>
                 </div>
-                <span className="text-[11px] text-text-muted flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="5" stroke="#8A8A9A" strokeWidth="1" />
-                    <path d="M6 3.5V6.5L8 7.5" stroke="#8A8A9A" strokeWidth="1" strokeLinecap="round" />
-                  </svg>
-                  약 {todayMission.estimatedMinutes}분
-                </span>
               </div>
-            </div>
-          </div>
-        </Link>
+            </Link>
+          </>
+        ) : null}
       </div>
 
       {/* ── Past Missions ── */}
@@ -594,23 +683,21 @@ export default function HomePage() {
       )}
 
       {/* ── Tomorrow Teaser (Locked) ── */}
-      {tomorrowMission && tomorrowCategoryMeta && (
-        <div
-          className={`${mounted ? "animate-fade-in-up delay-700" : "opacity-0"}`}
-          style={{ animationFillMode: "both" }}
-        >
-          <div className="relative bg-bg-warm rounded-2xl px-5 py-4 border border-border-light overflow-hidden">
-            {/* Frosted overlay */}
-            <div className="absolute inset-0 bg-bg-warm/60 backdrop-blur-sm z-10 flex items-center justify-center">
-              <div className="flex items-center gap-2 bg-card-bg/80 rounded-xl px-4 py-2.5 shadow-sm border border-border-light">
-                <LockSVG />
-                <span className="text-[13px] font-semibold text-text-muted">
-                  내일 열리는 미션
-                </span>
-              </div>
+      <div
+        className={`${mounted ? "animate-fade-in-up delay-700" : "opacity-0"}`}
+        style={{ animationFillMode: "both" }}
+      >
+        <div className="relative bg-bg-warm rounded-2xl px-5 py-4 border border-border-light overflow-hidden">
+          <div className="absolute inset-0 bg-bg-warm/60 backdrop-blur-sm z-10 flex items-center justify-center">
+            <div className="flex items-center gap-2 bg-card-bg/80 rounded-xl px-4 py-2.5 shadow-sm border border-border-light">
+              <LockSVG />
+              <span className="text-[13px] font-semibold text-text-muted">
+                내일도 새로운 세계가 기다리고 있어
+              </span>
             </div>
+          </div>
 
-            {/* Blurred content behind */}
+          {tomorrowMission && tomorrowCategoryMeta ? (
             <div className="opacity-40 blur-[2px]">
               <div className="flex items-center gap-2 mb-2">
                 <span
@@ -628,9 +715,11 @@ export default function HomePage() {
                 역할: {tomorrowMission.role}
               </p>
             </div>
-          </div>
+          ) : (
+            <div className="opacity-0 h-16" />
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

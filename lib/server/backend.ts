@@ -10,6 +10,7 @@ import {
   buildMirrorPrompts,
   buildGuideCommentPrompts,
   buildMissionGenerationPrompts,
+  buildPreviewGenerationPrompts,
 } from "./ai/prompts";
 import {
   AUTH_COOKIE_NAME,
@@ -37,6 +38,7 @@ import {
   sessionThinkingToolCards,
   sessionToolUsages,
   weeklyReports,
+  dailyChoiceSets,
 } from "@/lib/server/db/schema";
 import { env } from "@/lib/server/env";
 import {
@@ -48,7 +50,9 @@ import type {
   AuthTokenPayload,
   ChildProfile,
   ConfidenceLevel,
+  DailyChoiceSet,
   DifficultyType,
+  MissionPreview,
   ExpansionToolType,
   FamilyAccount,
   FamilyDevice,
@@ -142,6 +146,9 @@ type Store = {
   getWeeklyReportById: (reportId: string) => Promise<WeeklyReport | null>;
   listWeeklyReports: (childId: string) => Promise<WeeklyReport[]>;
   upsertWeeklyReport: (report: WeeklyReport) => Promise<void>;
+  getChoiceSet: (childId: string, choiceDate: string) => Promise<DailyChoiceSet | null>;
+  listChoiceSetsByChild: (childId: string) => Promise<DailyChoiceSet[]>;
+  upsertChoiceSet: (choiceSet: DailyChoiceSet) => Promise<void>;
 };
 
 type MemoryState = {
@@ -160,6 +167,7 @@ type MemoryState = {
   mirrors: Map<string, MirrorResult>;
   profiles: Map<string, UserProfileSnapshot>;
   reports: Map<string, WeeklyReport>;
+  choiceSets: Map<string, DailyChoiceSet>;
 };
 
 declare global {
@@ -188,6 +196,7 @@ function getMemoryState(): MemoryState {
       mirrors: new Map(),
       profiles: new Map(),
       reports: new Map(),
+      choiceSets: new Map(),
     };
   }
 
@@ -327,6 +336,17 @@ function createMemoryStore(): Store {
     },
     async upsertWeeklyReport(report) {
       state.reports.set(report.id, report);
+    },
+    async getChoiceSet(childId, choiceDate) {
+      return [...state.choiceSets.values()].find(
+        (cs) => cs.childId === childId && cs.choiceDate === choiceDate,
+      ) ?? null;
+    },
+    async listChoiceSetsByChild(childId) {
+      return [...state.choiceSets.values()].filter((cs) => cs.childId === childId);
+    },
+    async upsertChoiceSet(choiceSet) {
+      state.choiceSets.set(choiceSet.id, choiceSet);
     },
   };
 }
@@ -650,6 +670,60 @@ function createPostgresStore(): Store {
         },
       });
     },
+    async getChoiceSet(childId, choiceDate) {
+      const row = await db.query.dailyChoiceSets.findFirst({
+        where: and(
+          eq(dailyChoiceSets.childId, childId),
+          eq(dailyChoiceSets.choiceDate, choiceDate),
+        ),
+      });
+      if (!row) return null;
+      return {
+        id: row.id,
+        childId: row.childId,
+        choiceDate: row.choiceDate,
+        previews: row.previews as DailyChoiceSet["previews"],
+        chosenIndex: row.chosenIndex,
+        chosenMissionId: row.chosenMissionId,
+        strategy: row.strategy as DailyChoiceSet["strategy"],
+        createdAt: row.createdAt,
+        chosenAt: row.chosenAt,
+      };
+    },
+    async listChoiceSetsByChild(childId) {
+      const rows = await db.select().from(dailyChoiceSets).where(eq(dailyChoiceSets.childId, childId));
+      return rows.map((row) => ({
+        id: row.id,
+        childId: row.childId,
+        choiceDate: row.choiceDate,
+        previews: row.previews as DailyChoiceSet["previews"],
+        chosenIndex: row.chosenIndex,
+        chosenMissionId: row.chosenMissionId,
+        strategy: row.strategy as DailyChoiceSet["strategy"],
+        createdAt: row.createdAt,
+        chosenAt: row.chosenAt,
+      }));
+    },
+    async upsertChoiceSet(choiceSet) {
+      await db.insert(dailyChoiceSets).values({
+        id: choiceSet.id,
+        childId: choiceSet.childId,
+        choiceDate: choiceSet.choiceDate,
+        previews: choiceSet.previews,
+        chosenIndex: choiceSet.chosenIndex,
+        chosenMissionId: choiceSet.chosenMissionId,
+        strategy: choiceSet.strategy,
+        createdAt: choiceSet.createdAt,
+        chosenAt: choiceSet.chosenAt,
+      }).onConflictDoUpdate({
+        target: dailyChoiceSets.id,
+        set: {
+          chosenIndex: choiceSet.chosenIndex,
+          chosenMissionId: choiceSet.chosenMissionId,
+          chosenAt: choiceSet.chosenAt,
+        },
+      });
+    },
   };
 }
 
@@ -956,6 +1030,23 @@ const mirrorSchema = z.object({
       categoryHint: z.enum(["world", "value", "perspective", "real", "synthesis"]),
     })
     .nullable(),
+});
+
+const previewSetSchema = z.object({
+  previews: z.array(
+    z.object({
+      title: z.string(),
+      role: z.string(),
+      category: z.enum(["world", "value", "perspective", "real", "synthesis"]),
+      difficulty: z.enum([
+        "value-conflict", "dilemma", "creative-judgment", "perspective-shift",
+        "emotional-immersion", "observation", "problem-discovery", "expression", "comprehensive",
+      ]),
+      worldLocation: z.string(),
+      era: z.string(),
+      pitch: z.string(),
+    }),
+  ),
 });
 
 const generatedMissionSchema = z.object({
@@ -1584,6 +1675,7 @@ async function generateNewMission(
   childId: string,
   category: MissionCategory,
   difficulty: DifficultyType,
+  preview?: MissionPreview,
 ): Promise<Mission> {
   // Gather child context
   const profile = await store.getProfile(childId);
@@ -1610,6 +1702,7 @@ async function generateNewMission(
     mirrors,
     pastTitles,
     pastLocations,
+    preview,
   );
 
   // Generate with retry
@@ -1956,6 +2049,203 @@ export async function getMissionById(missionId: string) {
     throw new ApiError(404, "MISSION_NOT_FOUND", "Mission was not found");
   }
   return mission;
+}
+
+// ─── Daily Choice Set (3-preview selection system, day 8+) ───
+
+async function generateDailyPreviewsForChild(
+  store: Store,
+  child: ChildProfile,
+): Promise<DailyChoiceSet> {
+  const todayDate = toKstDateKey(nowIso());
+
+  const existing = await store.getChoiceSet(child.id, todayDate);
+  if (existing) return existing;
+
+  const profile = await store.getProfile(child.id);
+  if (!profile) {
+    throw new ApiError(404, "PROFILE_NOT_FOUND", "Profile is required for preview generation");
+  }
+
+  const mirrors = await store.listMirrorsByChild(child.id);
+  const sessions = await store.listSessionsByChild(child.id);
+  const allMissions = await store.listMissions();
+  const recentChoiceSets = await store.listChoiceSetsByChild(child.id);
+
+  const completedMissionIds = new Set(
+    sessions.filter((s) => s.status === "completed").map((s) => s.missionId),
+  );
+  const pastMissions = allMissions.filter((m) => completedMissionIds.has(m.id));
+  const pastTitles = pastMissions.map((m) => m.title);
+  const pastLocations = pastMissions.map((m) => m.worldSetting.location);
+
+  let rawPreviews: Array<{
+    title: string;
+    role: string;
+    category: MissionCategory;
+    difficulty: DifficultyType;
+    worldLocation: string;
+    era: string;
+    pitch: string;
+  }>;
+
+  if (env.TAM_AI_MODE === "mock") {
+    // Mock: pick 3 seeded missions from different categories
+    const usedCategories = new Set<string>();
+    const picked: Mission[] = [];
+    for (const m of seededMissions) {
+      if (!usedCategories.has(m.category) && picked.length < 3) {
+        usedCategories.add(m.category);
+        picked.push(m);
+      }
+    }
+    while (picked.length < 3) picked.push(seededMissions[picked.length % seededMissions.length]);
+
+    rawPreviews = picked.map((m) => ({
+      title: m.title,
+      role: m.role,
+      category: m.category as MissionCategory,
+      difficulty: m.difficulty as DifficultyType,
+      worldLocation: m.worldSetting.location,
+      era: m.worldSetting.era,
+      pitch: m.situation.slice(0, 15) + "...",
+    }));
+  } else {
+    const { systemPrompt, userPrompt } = buildPreviewGenerationPrompts(
+      profile,
+      mirrors,
+      pastTitles,
+      pastLocations,
+      recentChoiceSets,
+    );
+
+    const parsed = await callOpenRouter({
+      schema: previewSetSchema,
+      schemaName: "previews",
+      systemPrompt,
+      userPrompt,
+    });
+
+    rawPreviews = parsed.previews.slice(0, 3) as typeof rawPreviews;
+  }
+
+  const slots: Array<"fit" | "stretch" | "reveal"> = ["fit", "stretch", "reveal"];
+  const previews: MissionPreview[] = rawPreviews.map((p, i) => ({
+    index: i,
+    title: p.title,
+    role: p.role,
+    category: p.category,
+    difficulty: p.difficulty,
+    worldLocation: p.worldLocation,
+    era: p.era,
+    pitch: p.pitch,
+    slot: slots[i],
+  }));
+
+  const choiceSet: DailyChoiceSet = {
+    id: generateId("choice"),
+    childId: child.id,
+    choiceDate: todayDate,
+    previews,
+    chosenIndex: null,
+    chosenMissionId: null,
+    strategy: { fit: 0, stretch: 1, reveal: 2 },
+    createdAt: nowIso(),
+    chosenAt: null,
+  };
+
+  await store.upsertChoiceSet(choiceSet);
+  return choiceSet;
+}
+
+export async function getDailyChoices(payload: AuthTokenPayload) {
+  const { store, activeChild } = await getFamilyContextFromPayload(payload);
+
+  // Days 1-7: use existing single-mission assignment
+  const sequenceDay = diffDays(
+    toKstDateKey(nowIso()),
+    toKstDateKey(activeChild.createdAt),
+  ) + 1;
+
+  if (sequenceDay <= FIRST_SEVEN_DAY_CATEGORY_SEQUENCE.length) {
+    const { mission, reason } = await getTodayOrTomorrowMission(payload, 0);
+    return { status: "sequence" as const, mission, reason };
+  }
+
+  // Day 8+: 3-preview selection system
+  const todayDate = toKstDateKey(nowIso());
+  const existingSet = await store.getChoiceSet(activeChild.id, todayDate);
+
+  if (existingSet?.chosenMissionId) {
+    const mission = await store.getMission(existingSet.chosenMissionId);
+    if (mission) {
+      return { status: "chosen" as const, mission, reason: "네가 고른 세계야" };
+    }
+  }
+
+  const choiceSet = existingSet ?? await generateDailyPreviewsForChild(store, activeChild);
+  return {
+    status: "choosing" as const,
+    previews: choiceSet.previews,
+    choiceSetId: choiceSet.id,
+  };
+}
+
+export async function selectDailyMission(
+  payload: AuthTokenPayload,
+  input: { chosenIndex: number },
+) {
+  const { store, activeChild } = await getFamilyContextFromPayload(payload);
+  const todayDate = toKstDateKey(nowIso());
+
+  const choiceSet = await store.getChoiceSet(activeChild.id, todayDate);
+  if (!choiceSet) {
+    throw new ApiError(404, "NO_CHOICE_SET", "No daily choices available for today");
+  }
+
+  // Already chosen — return existing mission
+  if (choiceSet.chosenMissionId) {
+    const mission = await store.getMission(choiceSet.chosenMissionId);
+    if (!mission) throw new ApiError(500, "MISSION_MISSING", "Chosen mission not found");
+    return { mission, reason: "네가 고른 세계야" };
+  }
+
+  if (input.chosenIndex < 0 || input.chosenIndex >= choiceSet.previews.length) {
+    throw new ApiError(400, "INVALID_INDEX", "Invalid preview index");
+  }
+
+  const preview = choiceSet.previews[input.chosenIndex];
+
+  // Step 2: generate full mission from preview seed
+  const mission = await generateNewMission(
+    store,
+    activeChild.id,
+    preview.category,
+    preview.difficulty,
+    preview,
+  );
+
+  // Update choice set
+  const updatedSet: DailyChoiceSet = {
+    ...choiceSet,
+    chosenIndex: input.chosenIndex,
+    chosenMissionId: mission.id,
+    chosenAt: nowIso(),
+  };
+  await store.upsertChoiceSet(updatedSet);
+
+  // Create assignment for downstream compatibility
+  const assignment: MissionAssignment = {
+    id: generateId("assignment"),
+    childId: activeChild.id,
+    assignmentDate: todayDate,
+    missionId: mission.id,
+    reason: `"${preview.title}" — 네가 직접 고른 세계`,
+    createdAt: nowIso(),
+  };
+  await store.upsertAssignment(assignment);
+
+  return { mission, reason: assignment.reason };
 }
 
 async function getTodayOrTomorrowMission(payload: AuthTokenPayload, dayOffset: number) {
@@ -2463,42 +2753,97 @@ function buildInterestMap(
   reactions: SessionReaction[],
   tools: SessionToolUsage[],
   previousProfile: UserProfileSnapshot | null,
+  choiceSets: DailyChoiceSet[],
 ) {
   const config = [
     {
-      category: "디자인 & 창작",
-      missionTags: ["디자인", "브랜딩", "카피라이팅"],
+      category: "창작 & 표현",
+      missionTags: ["디자인", "브랜딩", "카피라이팅", "표현력", "창작"],
       valueTags: ["creativity", "emotion"] as ValueTag[],
     },
     {
-      category: "리더십 & 관리",
-      missionTags: ["리더십", "자원관리", "위기대응"],
-      valueTags: ["logic", "efficiency", "independence"] as ValueTag[],
+      category: "리더십 & 의사결정",
+      missionTags: ["리더십", "자원관리", "위기대응", "트레이드오프"],
+      valueTags: ["efficiency", "independence"] as ValueTag[],
     },
     {
-      category: "감정 & 관계",
-      missionTags: ["공감", "다중관점", "감정"],
-      valueTags: ["empathy", "emotion", "community"] as ValueTag[],
+      category: "공감 & 관계",
+      missionTags: ["공감", "다중관점", "감정", "이해"],
+      valueTags: ["empathy", "emotion"] as ValueTag[],
     },
     {
-      category: "과학 & 탐구",
-      missionTags: ["우주", "관찰력", "분석"],
-      valueTags: ["logic", "adventure"] as ValueTag[],
+      category: "윤리 & 사회",
+      missionTags: ["공정성", "공동체", "윤리", "책임"],
+      valueTags: ["fairness", "community"] as ValueTag[],
+    },
+    {
+      category: "탐구 & 분석",
+      missionTags: ["관찰력", "분석", "디자인사고", "문제해결"],
+      valueTags: ["logic", "efficiency"] as ValueTag[],
+    },
+    {
+      category: "모험 & 상상",
+      missionTags: ["우주", "모험", "상상력", "미래"],
+      valueTags: ["adventure", "creativity"] as ValueTag[],
+    },
+    {
+      category: "환경 & 지속가능성",
+      missionTags: ["환경", "자연", "생태", "도시설계", "도시"],
+      valueTags: ["community", "safety"] as ValueTag[],
     },
   ];
 
   return config.map((item) => {
-    const missionMatchCount = completedMissions.filter((mission) =>
-      mission.tags.some((tag) => item.missionTags.includes(tag)),
-    ).length;
+    // Choice signal: how many times the child actively chose a mission matching this category
+    let choiceSignal = 0;
+    let rejectionCount = 0;
+    for (const cs of choiceSets) {
+      if (cs.chosenIndex == null) continue;
+      const chosenPreview = cs.previews[cs.chosenIndex];
+      const chosenMissionTags = completedMissions
+        .find((m) => m.id === cs.chosenMissionId)?.tags ?? [];
+      if (
+        chosenMissionTags.some((tag) => item.missionTags.includes(tag)) ||
+        item.valueTags.some((vt) => chosenPreview.category === "world" && vt === "adventure")
+      ) {
+        choiceSignal += 1;
+      }
+      // Rejection: this category was offered but not chosen
+      for (let i = 0; i < cs.previews.length; i++) {
+        if (i === cs.chosenIndex) continue;
+        const rejected = cs.previews[i];
+        const rejectedMission = completedMissions.find((m) =>
+          m.worldSetting.location === rejected.worldLocation,
+        );
+        if (
+          (rejectedMission?.tags ?? []).some((tag) => item.missionTags.includes(tag)) ||
+          item.missionTags.some((mt) => rejected.title.includes(mt))
+        ) {
+          rejectionCount += 1;
+        }
+      }
+    }
+
+    // Value match from reactions (same as before, slightly higher weight)
     const valueMatchCount = reactions.flatMap((reaction) => reaction.valueTags).filter((tag) =>
       item.valueTags.includes(tag),
     ).length;
-    const toolWeight = tools.length * 5;
-    const currentScore = clampScore(missionMatchCount * 20 + valueMatchCount * 6 + toolWeight);
+
+    // Tool usage only for missions in this category
+    const categoryMissionIds = new Set(
+      completedMissions.filter((m) => m.tags.some((t) => item.missionTags.includes(t))).map((m) => m.id),
+    );
+    const categoryToolCount = tools.filter((t) => {
+      const session = completedSessions.find((s) => s.id === t.sessionId);
+      return session && categoryMissionIds.has(session.missionId);
+    }).length;
+
+    const currentScore = clampScore(
+      choiceSignal * 30 + valueMatchCount * 8 + rejectionCount * (-5) + categoryToolCount * 3,
+    );
     const previousScore =
       previousProfile?.interestMap.find((entry) => entry.category === item.category)?.score ?? 0;
-    const dataPoints = missionMatchCount + valueMatchCount;
+    const dataPoints = choiceSignal + valueMatchCount;
 
     return {
       category: item.category,
@@ -2531,6 +2876,7 @@ export async function recalculateProfileByChildId(childId: string) {
   const tools = (
     await Promise.all(completedSessions.map((session) => store.listToolsBySession(session.id)))
   ).flat();
+  const choiceSets = await store.listChoiceSetsByChild(child.id);
 
   const completedDateKeys = [...new Set(completedSessions.map((session) => toKstDateKey(session.completedAt!)))].sort();
   const todayKey = toKstDateKey(nowIso());
@@ -2654,7 +3000,7 @@ export async function recalculateProfileByChildId(childId: string) {
         icon: "🎭",
       },
     },
-    interestMap: buildInterestMap(completedSessions, completedMissions, reactions, tools, previousProfile),
+    interestMap: buildInterestMap(completedSessions, completedMissions, reactions, tools, previousProfile, choiceSets),
     updatedAt: nowIso(),
   };
 

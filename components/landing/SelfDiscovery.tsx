@@ -3,10 +3,13 @@
 import { useInView } from "@/lib/useInView";
 
 const interests = [
-  { label: "디자인 & 창작", value: 82, color: "#E8614D" },
-  { label: "리더십 & 관리", value: 70, color: "#4A5FC1" },
-  { label: "과학 & 탐구", value: 45, color: "#D4A853" },
-  { label: "감정 & 관계", value: 30, color: "#8A8A9A" },
+  { label: "창작 & 표현", value: 82, color: "#E8614D" },
+  { label: "리더십 & 의사결정", value: 70, color: "#4A5FC1" },
+  { label: "모험 & 상상", value: 68, color: "#E09145" },
+  { label: "공감 & 관계", value: 58, color: "#D4A853" },
+  { label: "윤리 & 사회", value: 52, color: "#6B8F71" },
+  { label: "탐구 & 분석", value: 45, color: "#7C6FAF" },
+  { label: "환경 & 지속가능성", value: 35, color: "#5B9EA6" },
 ];
 
 const patterns = [
