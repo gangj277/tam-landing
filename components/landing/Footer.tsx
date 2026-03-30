@@ -48,6 +48,9 @@ export default function Footer() {
 
           {/* Links */}
           <div className="flex items-center gap-6 text-[13px] text-white/40">
+            <a href="/blog" className="hover:text-white/70 transition-colors">
+              블로그
+            </a>
             <a href="#" className="hover:text-white/70 transition-colors">
               이용약관
             </a>

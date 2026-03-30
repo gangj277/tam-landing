@@ -1,9 +1,7 @@
-import { ALL_QUIZZES } from "@/lib/quiz-data";
+"use client";
 
-export const metadata = {
-  title: "무료 진단 — 탐 TAM",
-  description: "우리 아이, 얼마나 알고 계신가요? AI 시대에 맞는 아이 이해 진단.",
-};
+import { ALL_QUIZZES } from "@/lib/quiz-data";
+import { QuizIcon } from "@/lib/quiz-icons";
 
 export default function QuizHubPage() {
   const available = ALL_QUIZZES.filter((q) => q.available);
@@ -62,7 +60,9 @@ export default function QuizHubPage() {
                 className="block bg-white rounded-2xl border border-[#E8E6E1] p-6 hover:shadow-[0_4px_20px_rgba(26,26,46,0.06)] hover:border-[#E8E6E1]/80 transition-all duration-300 active:scale-[0.99]"
               >
                 <div className="flex items-start gap-4">
-                  <div className="text-[36px] flex-shrink-0">{quiz.emoji}</div>
+                  <div className="flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center text-[#E8614D] bg-[#E8614D]/[0.06]">
+                    <QuizIcon name={quiz.icon} className="[&_svg]:w-6 [&_svg]:h-6" />
+                  </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-[17px] font-bold text-[#1A1A2E] tracking-[-0.01em] mb-1">
                       {quiz.title}
@@ -110,7 +110,7 @@ export default function QuizHubPage() {
                   className="bg-white/60 rounded-xl border border-[#E8E6E1]/60 p-5 opacity-60"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-[24px]">{quiz.emoji}</span>
+                    <span className="text-[#8A8A9A]"><QuizIcon name={quiz.icon} className="[&_svg]:w-5 [&_svg]:h-5" /></span>
                     <div>
                       <h3 className="text-[14px] font-semibold text-[#1A1A2E] mb-0.5">
                         {quiz.title}

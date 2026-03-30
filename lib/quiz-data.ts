@@ -4,7 +4,7 @@ export interface QuizMeta {
   slug: string;
   title: string;
   subtitle: string;
-  emoji: string;
+  icon: string;
   duration: string;
   questionCount: number;
   description: string;
@@ -13,7 +13,7 @@ export interface QuizMeta {
 
 export interface QuizOption {
   id: string;
-  emoji?: string;
+  icon?: string;
   label: string;
   weights: Partial<Record<string, number>>;
 }
@@ -29,7 +29,7 @@ export interface QuizQuestion {
 
 export interface QuizResultType {
   id: string;
-  emoji: string;
+  icon: string;
   name: string;
   tagline: string;
   description: string;
@@ -52,7 +52,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "immersion-dna",
     title: "우리 아이 몰입 DNA 분석",
     subtitle: "아이가 시간을 잊고 빠져드는 순간의 비밀",
-    emoji: "🧬",
+    icon: "dna",
     duration: "2분 30초",
     questionCount: 7,
     description:
@@ -63,7 +63,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "ai-survival-type",
     title: "AI 시대 생존 유형 테스트",
     subtitle: "변화하는 세상에서 아이의 강점은?",
-    emoji: "🔮",
+    icon: "crystal",
     duration: "3분",
     questionCount: 8,
     description:
@@ -74,7 +74,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "child-world",
     title: "우리 아이는 어떤 세계에 살고 있을까?",
     subtitle: "아이의 내면 세계를 지도로 그려봅니다",
-    emoji: "🎯",
+    icon: "target",
     duration: "2분 30초",
     questionCount: 7,
     description:
@@ -85,7 +85,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "hidden-world",
     title: "엄마(아빠)는 모르는 숨겨진 세계",
     subtitle: "나는 우리 아이를 얼마나 알고 있을까?",
-    emoji: "👁️",
+    icon: "hidden",
     duration: "3분",
     questionCount: 9,
     description:
@@ -96,7 +96,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "2030-readiness",
     title: "2030년, 우리 아이 준비도 체크",
     subtitle: "4년 뒤, 아이는 준비되어 있을까?",
-    emoji: "⏰",
+    icon: "clock",
     duration: "3분",
     questionCount: 8,
     description:
@@ -107,7 +107,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "ai-portrait",
     title: "AI에게 물어봤습니다: 당신의 아이는?",
     subtitle: "AI가 보는 아이 vs 부모가 보는 아이",
-    emoji: "💬",
+    icon: "chat",
     duration: "3분",
     questionCount: 8,
     description:
@@ -118,7 +118,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     slug: "academy-vs-experience",
     title: "학원 5개 vs 경험 1개",
     subtitle: "우리 아이에게 진짜 필요한 건?",
-    emoji: "📊",
+    icon: "chart",
     duration: "3분",
     questionCount: 8,
     description:
@@ -163,18 +163,18 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
       subtitle: "평소 관찰한 것을 기준으로 골라주세요.",
       maxSelect: 3,
       options: [
-        { id: "q1-coding", emoji: "💻", label: "코딩 / 프로그래밍", weights: w2("builder", "solver") },
-        { id: "q1-drawing", emoji: "🎨", label: "그림 / 만들기", weights: w2("expression", "builder") },
-        { id: "q1-reading", emoji: "📚", label: "독서 / 글쓰기", weights: w2("inquiry", "expression") },
-        { id: "q1-building", emoji: "🧱", label: "레고 / 조립", weights: w2("builder", "solver") },
-        { id: "q1-debate", emoji: "🗣️", label: "토론 / 대화", weights: w2("connector", "inquiry") },
-        { id: "q1-organizing", emoji: "📋", label: "정리 / 계획 세우기", weights: w2("solver", "builder") },
-        { id: "q1-nature", emoji: "🌿", label: "자연 탐험", weights: w2("inquiry", "connector") },
-        { id: "q1-documentary", emoji: "🎬", label: "다큐 / 지식 영상", weights: w2("inquiry", "expression") },
-        { id: "q1-story", emoji: "✍️", label: "이야기 만들기", weights: w2("expression", "inquiry") },
-        { id: "q1-puzzle", emoji: "🧩", label: "퍼즐 / 수수께끼", weights: w2("solver", "inquiry") },
-        { id: "q1-social", emoji: "👥", label: "친구 모임 기획", weights: w2("connector", "expression") },
-        { id: "q1-perform", emoji: "🎤", label: "공연 / 발표", weights: w2("expression", "connector") },
+        { id: "q1-coding", icon: "coding", label: "코딩 / 프로그래밍", weights: w2("builder", "solver") },
+        { id: "q1-drawing", icon: "drawing", label: "그림 / 만들기", weights: w2("expression", "builder") },
+        { id: "q1-reading", icon: "reading", label: "독서 / 글쓰기", weights: w2("inquiry", "expression") },
+        { id: "q1-building", icon: "building", label: "레고 / 조립", weights: w2("builder", "solver") },
+        { id: "q1-debate", icon: "debate", label: "토론 / 대화", weights: w2("connector", "inquiry") },
+        { id: "q1-organizing", icon: "organizing", label: "정리 / 계획 세우기", weights: w2("solver", "builder") },
+        { id: "q1-nature", icon: "nature", label: "자연 탐험", weights: w2("inquiry", "connector") },
+        { id: "q1-documentary", icon: "documentary", label: "다큐 / 지식 영상", weights: w2("inquiry", "expression") },
+        { id: "q1-story", icon: "story", label: "이야기 만들기", weights: w2("expression", "inquiry") },
+        { id: "q1-puzzle", icon: "puzzle", label: "퍼즐 / 수수께끼", weights: w2("solver", "inquiry") },
+        { id: "q1-social", icon: "social", label: "친구 모임 기획", weights: w2("connector", "expression") },
+        { id: "q1-perform", icon: "perform", label: "공연 / 발표", weights: w2("expression", "connector") },
       ],
     },
     {
@@ -182,11 +182,11 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
       type: "single",
       question: "아이가 무언가에 깊이 빠져들 때, 어떤 모습인가요?",
       options: [
-        { id: "q2-quiet", emoji: "🤫", label: "혼자 조용히 집중한다", weights: w2("inquiry", "builder") },
-        { id: "q2-talk", emoji: "💬", label: "주변에 계속 이야기한다", weights: w2("expression", "connector") },
-        { id: "q2-try", emoji: "🔨", label: "직접 이것저것 해본다", weights: w2("builder", "solver") },
-        { id: "q2-people", emoji: "🤝", label: "다른 사람을 끌어들인다", weights: w2("connector", "expression") },
-        { id: "q2-question", emoji: "❓", label: "끊임없이 질문을 던진다", weights: w2("inquiry", "solver") },
+        { id: "q2-quiet", icon: "quiet", label: "혼자 조용히 집중한다", weights: w2("inquiry", "builder") },
+        { id: "q2-talk", icon: "chat", label: "주변에 계속 이야기한다", weights: w2("expression", "connector") },
+        { id: "q2-try", icon: "tryit", label: "직접 이것저것 해본다", weights: w2("builder", "solver") },
+        { id: "q2-people", icon: "people", label: "다른 사람을 끌어들인다", weights: w2("connector", "expression") },
+        { id: "q2-question", icon: "question", label: "끊임없이 질문을 던진다", weights: w2("inquiry", "solver") },
       ],
     },
     {
@@ -194,11 +194,11 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
       type: "single",
       question: "아이의 호기심은 보통 어디서 시작되나요?",
       options: [
-        { id: "q3-question", emoji: "💭", label: "왜?라는 질문에서", weights: w("inquiry", 2) },
-        { id: "q3-feeling", emoji: "💗", label: "어떤 감정이 생겼을 때", weights: w2("expression", "connector") },
-        { id: "q3-saw", emoji: "👀", label: "신기한 걸 봤을 때", weights: w2("inquiry", "expression") },
-        { id: "q3-person", emoji: "🧑", label: "누군가를 만났을 때", weights: w2("connector", "inquiry") },
-        { id: "q3-problem", emoji: "⚠️", label: "문제를 발견했을 때", weights: w2("solver", "builder") },
+        { id: "q3-question", icon: "thought", label: "왜?라는 질문에서", weights: w("inquiry", 2) },
+        { id: "q3-feeling", icon: "heart", label: "어떤 감정이 생겼을 때", weights: w2("expression", "connector") },
+        { id: "q3-saw", icon: "eye", label: "신기한 걸 봤을 때", weights: w2("inquiry", "expression") },
+        { id: "q3-person", icon: "person", label: "누군가를 만났을 때", weights: w2("connector", "inquiry") },
+        { id: "q3-problem", icon: "warning", label: "문제를 발견했을 때", weights: w2("solver", "builder") },
       ],
     },
     {
@@ -206,11 +206,11 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
       type: "single",
       question: "아이가 좋아하는 활동에서 어려움을 만나면?",
       options: [
-        { id: "q4-dig", emoji: "🔍", label: "더 깊이 파고든다", weights: w2("inquiry", "solver") },
-        { id: "q4-different", emoji: "🔄", label: "다른 방법을 시도한다", weights: w2("builder", "solver") },
-        { id: "q4-ask", emoji: "🙋", label: "주변에 도움을 구한다", weights: w2("connector", "expression") },
-        { id: "q4-express", emoji: "😤", label: "감정을 먼저 표현한다", weights: w2("expression", "connector") },
-        { id: "q4-analyze", emoji: "📊", label: "문제를 분석하고 쪼갠다", weights: w2("solver", "inquiry") },
+        { id: "q4-dig", icon: "dig", label: "더 깊이 파고든다", weights: w2("inquiry", "solver") },
+        { id: "q4-different", icon: "different", label: "다른 방법을 시도한다", weights: w2("builder", "solver") },
+        { id: "q4-ask", icon: "ask", label: "주변에 도움을 구한다", weights: w2("connector", "expression") },
+        { id: "q4-express", icon: "express", label: "감정을 먼저 표현한다", weights: w2("expression", "connector") },
+        { id: "q4-analyze", icon: "chart", label: "문제를 분석하고 쪼갠다", weights: w2("solver", "inquiry") },
       ],
     },
     {
@@ -219,11 +219,11 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
       question: "아이의 에너지가 올라가는 순간은?",
       subtitle: "가장 가까운 것 하나를 골라주세요.",
       options: [
-        { id: "q5-new-info", emoji: "🌟", label: "새로운 사실을 알게 됐을 때", weights: w("inquiry", 2) },
-        { id: "q5-made", emoji: "✨", label: "뭔가를 직접 만들었을 때", weights: w2("builder", "expression") },
-        { id: "q5-audience", emoji: "👏", label: "누군가에게 보여줬을 때", weights: w2("expression", "connector") },
-        { id: "q5-together", emoji: "🤗", label: "여러 사람과 함께할 때", weights: w("connector", 2) },
-        { id: "q5-solved", emoji: "💡", label: "문제를 해결했을 때", weights: w("solver", 2) },
+        { id: "q5-new-info", icon: "star", label: "새로운 사실을 알게 됐을 때", weights: w("inquiry", 2) },
+        { id: "q5-made", icon: "sparkle", label: "뭔가를 직접 만들었을 때", weights: w2("builder", "expression") },
+        { id: "q5-audience", icon: "clap", label: "누군가에게 보여줬을 때", weights: w2("expression", "connector") },
+        { id: "q5-together", icon: "hug", label: "여러 사람과 함께할 때", weights: w("connector", 2) },
+        { id: "q5-solved", icon: "bulb", label: "문제를 해결했을 때", weights: w("solver", 2) },
       ],
     },
     {
@@ -240,18 +240,18 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
         "모든 판단을 내려놓고, 아이에게 하루를 온전히 준다면 뭘 할 것 같나요?",
       subtitle: "학원도, 숙제도, 잔소리도 없는 하루.",
       options: [
-        { id: "q7-explore", emoji: "🗺️", label: "가본 적 없는 곳을 탐험한다", weights: w2("inquiry", "connector") },
-        { id: "q7-create", emoji: "🎭", label: "뭔가를 만들거나 표현한다", weights: w2("expression", "builder") },
-        { id: "q7-build", emoji: "🏗️", label: "머릿속 아이디어를 실체로 만든다", weights: w("builder", 2) },
-        { id: "q7-people", emoji: "🎉", label: "좋아하는 사람들과 시간을 보낸다", weights: w("connector", 2) },
-        { id: "q7-fix", emoji: "🔧", label: "불편했던 것을 직접 고쳐본다", weights: w("solver", 2) },
+        { id: "q7-explore", icon: "map", label: "가본 적 없는 곳을 탐험한다", weights: w2("inquiry", "connector") },
+        { id: "q7-create", icon: "theater", label: "뭔가를 만들거나 표현한다", weights: w2("expression", "builder") },
+        { id: "q7-build", icon: "crane", label: "머릿속 아이디어를 실체로 만든다", weights: w("builder", 2) },
+        { id: "q7-people", icon: "party", label: "좋아하는 사람들과 시간을 보낸다", weights: w("connector", 2) },
+        { id: "q7-fix", icon: "wrench", label: "불편했던 것을 직접 고쳐본다", weights: w("solver", 2) },
       ],
     },
   ],
   resultTypes: [
     {
       id: "inquiry",
-      emoji: "🔬",
+      icon: "microscope",
       name: "탐구형 DNA",
       tagline: "\"왜?\"를 이해하고 싶은 아이",
       description:
@@ -267,7 +267,7 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
     },
     {
       id: "expression",
-      emoji: "🎭",
+      icon: "theater",
       name: "표현형 DNA",
       tagline: "보여주고, 들려주고 싶은 아이",
       description:
@@ -283,7 +283,7 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
     },
     {
       id: "builder",
-      emoji: "🏗️",
+      icon: "crane",
       name: "구축형 DNA",
       tagline: "머릿속을 현실로 만드는 아이",
       description:
@@ -299,7 +299,7 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
     },
     {
       id: "connector",
-      emoji: "🌐",
+      icon: "globe",
       name: "연결형 DNA",
       tagline: "사람과 아이디어를 잇는 아이",
       description:
@@ -315,7 +315,7 @@ export const IMMERSION_DNA_QUIZ: Quiz = {
     },
     {
       id: "solver",
-      emoji: "⚖️",
+      icon: "scale",
       name: "해결형 DNA",
       tagline: "문제를 보면 가만히 못 있는 아이",
       description:

@@ -10,6 +10,7 @@ import {
   type QuizQuestion,
   type QuizResultType,
 } from "@/lib/quiz-data";
+import { QuizIcon } from "@/lib/quiz-icons";
 
 type Phase = "intro" | "playing" | "calculating" | "result";
 
@@ -129,7 +130,9 @@ export default function QuizPlayPage({
           {/* ─── Intro ─── */}
           {phase === "intro" && (
             <div className="page-enter text-center pt-8">
-              <div className="text-[48px] mb-4">{quiz.meta.emoji}</div>
+              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[#E8614D]/[0.06] flex items-center justify-center text-[#E8614D]">
+                <QuizIcon name={quiz.meta.icon} className="[&_svg]:w-8 [&_svg]:h-8" />
+              </div>
               <h1 className="text-[24px] md:text-[28px] font-bold text-[#1A1A2E] tracking-[-0.03em] mb-3">
                 {quiz.meta.title}
               </h1>
@@ -226,7 +229,9 @@ export default function QuizPlayPage({
                                   : "bg-white border-2 border-[#E8E6E1] hover:border-[#E8E6E1]/80"
                               }`}
                             >
-                              <span className="text-[18px] block mb-1">{opt.emoji}</span>
+                              <span className={`block mb-1 ${selected ? "text-[#E8614D]" : "text-[#4A4A5A]"}`}>
+                                <QuizIcon name={opt.icon ?? ""} className="[&_svg]:w-5 [&_svg]:h-5" />
+                              </span>
                               <span className={`text-[13px] font-medium leading-tight ${
                                 selected ? "text-[#E8614D]" : "text-[#1A1A2E]"
                               }`}>
@@ -266,7 +271,9 @@ export default function QuizPlayPage({
                                 : "bg-white border-2 border-[#E8E6E1] hover:border-[#1A1A2E]/10"
                             }`}
                           >
-                            <span className="text-[20px] flex-shrink-0">{opt.emoji}</span>
+                            <span className={`flex-shrink-0 ${selected ? "text-[#E8614D]" : "text-[#4A4A5A]"}`}>
+                              <QuizIcon name={opt.icon ?? ""} className="[&_svg]:w-5 [&_svg]:h-5" />
+                            </span>
                             <span className={`text-[14px] font-medium ${
                               selected ? "text-[#E8614D]" : "text-[#1A1A2E]"
                             }`}>
@@ -289,8 +296,8 @@ export default function QuizPlayPage({
                 <div className="absolute inset-0 rounded-full border-2 border-[#E8E6E1]" />
                 <div className="absolute inset-0 rounded-full border-2 border-[#E8614D] border-t-transparent animate-spin" />
                 <div className="absolute inset-2 rounded-full border-2 border-[#4A5FC1] border-b-transparent animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }} />
-                <div className="absolute inset-0 flex items-center justify-center text-[24px]">
-                  🧬
+                <div className="absolute inset-0 flex items-center justify-center text-[#E8614D]">
+                  <QuizIcon name="dna" className="[&_svg]:w-7 [&_svg]:h-7" />
                 </div>
               </div>
               <p className="text-[17px] font-bold text-[#1A1A2E] mb-2">
@@ -314,7 +321,9 @@ export default function QuizPlayPage({
                   className="px-8 pt-10 pb-8 text-center"
                   style={{ background: `linear-gradient(135deg, ${resultType.color}18, ${resultType.color}08)` }}
                 >
-                  <div className="text-[52px] mb-3">{resultType.emoji}</div>
+                  <div className="w-16 h-16 mx-auto mb-3 rounded-2xl flex items-center justify-center" style={{ background: `${resultType.color}15`, color: resultType.color }}>
+                    <QuizIcon name={resultType.icon} className="[&_svg]:w-8 [&_svg]:h-8" />
+                  </div>
                   <p className="text-[12px] font-semibold tracking-[0.06em] uppercase mb-2" style={{ color: resultType.color }}>
                     우리 아이의 몰입 DNA
                   </p>
