@@ -34,20 +34,35 @@ const steps = [
   },
   {
     num: "03",
-    title: "행동한다",
-    subtitle: "Act",
-    desc: "선택만 하고 끝나지 않습니다.\nAI와 함께 아이디어를 넓히고,\n다른 시각으로 바꿔보고,\n직접 결과물을 만들어봅니다.",
+    title: "깊이 들어간다",
+    subtitle: "Deepen",
+    desc: "선택의 파급이 예상 못한 곳으로 번집니다.\n새로운 사람이 등장하고, 숨겨진 문제가 드러나고,\n가장 어려운 순간을 마주합니다.",
     color: "#D4A853",
     icon: (
       <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <rect x="8" y="12" width="20" height="14" rx="2" stroke="#D4A853" strokeWidth="1.5" fill="#D4A853" fillOpacity="0.08" />
-        <path d="M14 19h8M14 23h5" stroke="#D4A853" strokeWidth="1.2" strokeLinecap="round" />
-        <path d="M24 8l-4 4h3v2" stroke="#D4A853" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M18 6v24" stroke="#D4A853" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
+        <circle cx="18" cy="12" r="4" stroke="#D4A853" strokeWidth="1.2" fill="#D4A853" fillOpacity="0.08" />
+        <circle cx="18" cy="22" r="6" stroke="#D4A853" strokeWidth="1.5" fill="#D4A853" fillOpacity="0.12" />
+        <circle cx="18" cy="22" r="2" fill="#D4A853" fillOpacity="0.3" />
       </svg>
     ),
   },
   {
     num: "04",
+    title: "행동한다",
+    subtitle: "Act",
+    desc: "선택만 하고 끝나지 않습니다.\nAI와 함께 아이디어를 넓히고,\n다른 시각으로 바꿔보고,\n직접 결과물을 만들어봅니다.",
+    color: "#E8614D",
+    icon: (
+      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
+        <rect x="8" y="12" width="20" height="14" rx="2" stroke="#E8614D" strokeWidth="1.5" fill="#E8614D" fillOpacity="0.08" />
+        <path d="M14 19h8M14 23h5" stroke="#E8614D" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M24 8l-4 4h3v2" stroke="#E8614D" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    num: "05",
     title: "발견한다",
     subtitle: "Mirror",
     desc: '"오늘은 완성도보다 독특함을 택했네요."\n"다른 사람의 반응을 많이 생각하면서 골랐어요."\n\n평가가 아니라 거울입니다.',
@@ -88,7 +103,7 @@ export default function HowItWorks() {
             }`}
             style={{ transitionDelay: "100ms" }}
           >
-            하루 한 번, 네 단계의 경험
+            하루 한 번, 다섯 단계의 경험
           </h2>
           <p
             className={`text-[15px] md:text-[17px] leading-[1.7] text-text-secondary transition-all duration-700 ${

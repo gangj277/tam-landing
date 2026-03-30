@@ -15,7 +15,7 @@
 매일 1개 미션 배정
 → 세계 진입 (Encounter): 역할 + 상황 몰입
 → 초기 선택 (Choice): 3개 선택지 중 택 1
-→ 시나리오 체인 (Act): 3라운드 × 감정+방식 리액션 카드
+→ 시나리오 체인 (Act): 5턴 × 감정+방식 리액션 카드 (기→승→전→전결→결)
 → 에필로그: AI가 선택 기반으로 생성한 결과 장면
 → 거울 (Mirror): AI가 선택 패턴 관찰 피드백
 → 프로필 업데이트: 5축 발견 + 관심 영역 맵 누적
@@ -183,7 +183,7 @@ FamilyAccount (01)
   └── ChildProfile[] (01)
         └── MissionSession[] (03)
               ├── initialChoice (03)
-              ├── ReactionRecord[] (03) — 감정 × 방식 × 3라운드
+              ├── ReactionRecord[] (05) — 감정 × 방식 × 5턴
               ├── ToolUsageRecord[] (03)
               ├── closingResponse (03)
               └── MirrorResult (04) — AI 생성

@@ -270,7 +270,7 @@ Response:
 
 [분석 대상]
 - 초기 선택: {choice}
-- 3라운드 리액션: {reactions}
+- 5턴 리액션: {reactions}
 - 생각 도구 사용: {toolsUsed}
 - 클로징 응답: {closingResponse}
 - 과거 미러: {previousMirrors}

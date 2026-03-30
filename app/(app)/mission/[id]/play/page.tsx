@@ -462,7 +462,7 @@ function EpilogueView({ epilogue, color, onComplete }: {
 // MAIN PAGE — Connected to Backend APIs
 // ═══════════════════════════════════════
 
-const TOTAL_ROUNDS = 3;
+const TOTAL_ROUNDS = 5;
 const CLOSING_PROMPT = "오늘 가장 어려웠던 순간은 언제였어?";
 
 type Phase =

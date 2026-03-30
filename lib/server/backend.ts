@@ -2291,8 +2291,8 @@ export async function generateSessionEpilogue(payload: AuthTokenPayload, input: 
   }
 
   const reactions = await store.listReactionsBySession(session.id);
-  if (reactions.length < 3) {
-    throw new ApiError(409, "REACTIONS_INCOMPLETE", "Three reactions are required before generating an epilogue");
+  if (reactions.length < 5) {
+    throw new ApiError(409, "REACTIONS_INCOMPLETE", "Five reactions are required before generating an epilogue");
   }
 
   const mission = await store.getMission(session.missionId);

@@ -418,6 +418,9 @@ export default function HomePage() {
   const tomorrowCategoryMeta = tomorrowMission
     ? CATEGORY_META[tomorrowMission.category as MissionCategory]
     : null;
+  const isTodayCompleted = pastSessions.some(
+    (s) => s.missionId === todayMission.id,
+  );
 
   return (
     <div className="page-enter px-5 pt-14 pb-6">
@@ -458,13 +461,15 @@ export default function HomePage() {
           오늘의 미션
         </p>
 
-        <Link href={`/mission/${todayMission.id}`} className="block tap-highlight">
-          <div className="bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border border-border-light overflow-hidden">
+        <Link href={isTodayCompleted ? `/mission/${todayMission.id}/mirror` : `/mission/${todayMission.id}`} className="block tap-highlight">
+          <div className={`bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border overflow-hidden ${isTodayCompleted ? "border-[#A5D6A7]" : "border-border-light"}`}>
             {/* Category color band */}
             <div
               className="h-1.5"
               style={{
-                background: `linear-gradient(90deg, ${categoryMeta.color}, ${categoryMeta.color}88, ${categoryMeta.color}44)`,
+                background: isTodayCompleted
+                  ? "linear-gradient(90deg, #66BB6A, #66BB6Aaa, #66BB6A44)"
+                  : `linear-gradient(90deg, ${categoryMeta.color}, ${categoryMeta.color}88, ${categoryMeta.color}44)`,
               }}
             />
 
@@ -502,9 +507,16 @@ export default function HomePage() {
               </p>
 
               {/* CTA Button */}
-              <button className="w-full bg-coral text-white font-bold text-[15px] py-3.5 rounded-xl active:bg-coral-hover transition-colors">
-                세계에 들어가기
-              </button>
+              {isTodayCompleted ? (
+                <div className="w-full flex items-center justify-center gap-2 bg-[#E8F5E9] text-[#2E7D32] font-bold text-[15px] py-3.5 rounded-xl">
+                  <CheckSVG color="#2E7D32" />
+                  탐험 돌아보기
+                </div>
+              ) : (
+                <button className="w-full bg-coral text-white font-bold text-[15px] py-3.5 rounded-xl active:bg-coral-hover transition-colors">
+                  세계에 들어가기
+                </button>
+              )}
 
               {/* Tags + Time */}
               <div className="flex items-center justify-between mt-4">

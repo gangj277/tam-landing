@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import Link from "next/link";
-import { getMission, ApiError } from "@/lib/api-client";
+import { getMission, listSessions, ApiError } from "@/lib/api-client";
 import type { MissionData } from "@/lib/api-client";
 import { CATEGORY_META, DIFFICULTY_LABELS } from "@/lib/types";
 
@@ -378,6 +378,7 @@ export default function MissionIntroPage({
 }) {
   const { id } = use(params);
   const [mission, setMission] = useState<MissionData | null>(null);
+  const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -385,9 +386,13 @@ export default function MissionIntroPage({
     let cancelled = false;
     async function load() {
       try {
-        const data = await getMission(id);
+        const [data, sessionsRes] = await Promise.all([
+          getMission(id),
+          listSessions(50).catch(() => ({ sessions: [] })),
+        ]);
         if (!cancelled) {
           setMission(data.mission);
+          setIsCompleted(sessionsRes.sessions.some((s) => s.missionId === id));
         }
       } catch (err) {
         if (!cancelled) {
@@ -616,17 +621,35 @@ export default function MissionIntroPage({
           className="opacity-0 animate-fade-in-up"
           style={{ animationDelay: "2200ms", animationFillMode: "forwards" }}
         >
-          <Link
-            href={`/mission/${id}/play`}
-            className="block w-full text-center text-white font-semibold text-lg py-4 rounded-xl tap-highlight transition-all duration-200 active:scale-[0.97]"
-            style={{
-              backgroundColor: "var(--coral)",
-              boxShadow: `0 4px 24px rgba(232, 97, 77, 0.3), 0 0 0 0 rgba(232, 97, 77, 0)`,
-              animation: "ctaGlow 2.5s ease-in-out infinite",
-            }}
-          >
-            미션 시작하기
-          </Link>
+          {isCompleted ? (
+            <Link
+              href={`/mission/${id}/mirror`}
+              className="flex items-center justify-center gap-2 w-full text-center font-semibold text-lg py-4 rounded-xl tap-highlight transition-all duration-200 active:scale-[0.97]"
+              style={{
+                backgroundColor: "#E8F5E9",
+                color: "#2E7D32",
+              }}
+            >
+              <svg width="20" height="20" viewBox="0 0 18 18" fill="none">
+                <circle cx="9" cy="9" r="8" fill="#2E7D32" opacity="0.15" />
+                <circle cx="9" cy="9" r="8" stroke="#2E7D32" strokeWidth="1.2" opacity="0.4" />
+                <path d="M5.5 9.5L7.8 11.8L12.5 6.5" stroke="#2E7D32" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              탐험 돌아보기
+            </Link>
+          ) : (
+            <Link
+              href={`/mission/${id}/play`}
+              className="block w-full text-center text-white font-semibold text-lg py-4 rounded-xl tap-highlight transition-all duration-200 active:scale-[0.97]"
+              style={{
+                backgroundColor: "var(--coral)",
+                boxShadow: `0 4px 24px rgba(232, 97, 77, 0.3), 0 0 0 0 rgba(232, 97, 77, 0)`,
+                animation: "ctaGlow 2.5s ease-in-out infinite",
+              }}
+            >
+              미션 시작하기
+            </Link>
+          )}
         </div>
 
         {/* ─── Meta tags ─── */}

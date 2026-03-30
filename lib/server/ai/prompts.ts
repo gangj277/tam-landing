@@ -46,15 +46,20 @@ const DIFFICULTY_GUIDANCE: Record<DifficultyType, string> = {
 };
 
 function getEscalationGuidance(roundIndex: number, followUpAngles: string[]): string {
+  const angle = (i: number) => followUpAngles[i] ?? followUpAngles[followUpAngles.length - 1] ?? "";
   if (roundIndex === 0) {
-    return "[1라운드: 직접 결과]\n아이의 선택이 가장 가까운 사람·상황에 즉각 영향을 준다. 눈앞에 보이는 변화를 감각적으로 보여줘.";
+    return `[1턴: 진입 — 기(起)]\n아이의 선택이 가장 가까운 사람·상황에 즉각 영향을 준다. 눈앞에 보이는 변화를 감각적으로 보여줘.\n서사 방향 힌트: ${angle(0)}`;
   }
   if (roundIndex === 1) {
-    const angles = followUpAngles.slice(0, 2).join(", ");
-    return `[2라운드: 파급 효과]\n1라운드 선택의 여파가 예상 못한 곳에 번진다. 새로운 이해관계자가 등장하거나 숨어있던 문제가 드러나.\n서사 방향 힌트: ${angles}`;
+    return `[2턴: 심화 — 승(承)]\n1턴 선택의 여파가 예상 못한 곳에 번진다. 새로운 이해관계자가 등장하거나 숨어있던 문제가 드러나.\n서사 방향 힌트: ${angle(1)}`;
   }
-  const angles = followUpAngles.slice(2).join(", ");
-  return `[3라운드: 구조적 질문]\n개인의 선택을 넘어 '이런 상황이 왜 생기는지' 시스템적 질문으로 확대해. 아이가 '나 하나의 결정'이 아니라 '이 세계의 구조'를 보게 해.\n서사 방향 힌트: ${angles}`;
+  if (roundIndex === 2) {
+    return `[3턴: 전환점 — 전(轉)]\n가치가 정면 충돌하는 순간. 이전 선택들이 만든 긴장이 최고조에 달해. 가장 어려운 딜레마를 던져.\n서사 방향 힌트: ${angle(2)}`;
+  }
+  if (roundIndex === 3) {
+    return `[4턴: 행동 — 전→결]\n아이의 결정에 세계가 반응한다. 예상 못한 반발이나 부작용이 드러나고, 아이가 직접 수습하거나 새로운 방법을 찾아야 해.\n서사 방향 힌트: ${angle(3)}`;
+  }
+  return `[5턴: 마무리 — 결(結)]\n개인의 선택을 넘어 '이런 상황이 왜 생기는지' 시스템적 질문으로 확대해. 아이가 '나 하나의 결정'이 아니라 '이 세계의 구조'를 보게 해. 여운이 남는 마무리.\n서사 방향 힌트: ${angle(4)}`;
 }
 
 const TOOL_TYPE_GUIDANCE: Record<ExpansionToolType, string> = {
@@ -256,7 +261,7 @@ ${mission.worldSetting.backdrop}
 </세계관>
 
 <규칙>
-1. 정확히 4개의 장면. 각 장면은 이 아이의 구체적인 선택이 만든 결과야.
+1. 정확히 4개의 장면. 각 장면은 이 아이의 5턴에 걸친 구체적인 선택이 만든 결과야.
 2. 장면 구성:
    - 장면 1: 초기 선택의 직접적 결과가 눈에 보이는 순간.
    - 장면 2: 예상 못했던 부수 효과. 좋든 나쁘든.
@@ -316,7 +321,7 @@ export function buildMirrorPrompts(
 
 <관찰의 깊이>
 - 첫 번째 observation: 이 아이가 가장 먼저, 가장 일관되게 보여준 가치 경향. 초기 선택 + 감정 카드 패턴에서 찾아. 구체적 장면을 짚어줘.
-- 두 번째 observation: 라운드가 진행되면서 변하거나 특히 어려운 순간에 드러난 패턴. 특히 2~3라운드의 감정+방법 조합에서 찾아.
+- 두 번째 observation: 턴이 진행되면서 변하거나 특히 어려운 순간에 드러난 패턴. 특히 3~5턴의 감정+방법 조합에서 찾아. 5턴의 데이터가 있으므로 변화 추이를 관찰해.
 - patternNote: 이전 미러가 있으면 변화를 짚어줘. 없으면 null.
 - nextSuggestion.reason: 이 아이에게 다음에 어떤 유형의 경험이 좋을지 한 줄로. categoryHint는 world/value/perspective/real/synthesis 중 하나.
 </관찰의 깊이>`;
@@ -470,8 +475,8 @@ ${DIFFICULTY_GUIDANCE[difficulty]}
 3. 3개 선택지에 최소 6개의 서로 다른 태그가 분산되어야 해. 같은 태그 조합 금지.
 4. choice.id: 영문 케밥케이스 ("explore-cave", "protect-village" 등)
 5. choice.shortLabel: 2~4글자 한국어 요약
-6. expansionTools: broaden(🔭, "더 넓혀보기"), reframe(🔄, "다른 시각으로 보기"), subvert(🌀, "이상하게 바꾸기") 정확히 3개. 각각 prompts 3개.
-7. followUpAngles: 정확히 4개. 시나리오 라운드에서 AI가 파고들 서사 방향. 점점 깊어지는 순서.
+6. expansionTools: broaden(🔭, "더 넓혀보기"), reframe(🔄, "다른 시각으로 보기"), subvert(🌀, "이상하게 바꾸기") 정확히 3개. 각각 prompts 5개 (5턴 각각에 대응).
+7. followUpAngles: 정확히 6개. 5턴 시나리오에서 AI가 파고들 서사 방향. 기(도입)→승(심화)→전(전환)→전→결(행동)→결(마무리) 순서로 점점 깊어지게.
 8. tags: 3~5개 한국어 키워드.
 9. estimatedMinutes: 5~10 사이 정수.
 10. ageRange: [10, 14].
