@@ -1543,6 +1543,50 @@ async function generateThinkingToolCard(
   };
 }
 
+// Streaming version of thinking tool generation
+export function generateThinkingToolStream(
+  mission: Mission,
+  session: MissionSession,
+  roundIndex: number,
+  toolType: ExpansionToolType,
+  currentRound: GeneratedScenarioRound,
+  previousReactions: SessionReaction[],
+): ReadableStream<Uint8Array> {
+  const toolMeta =
+    mission.aiContext.expansionTools.find((tool) => tool.type === toolType) ??
+    mission.aiContext.expansionTools[0];
+
+  if (env.TAM_AI_MODE === "mock") {
+    const encoder = new TextEncoder();
+    const narrative =
+      `${toolMeta?.label ?? toolType} 관점에서 보면 ${mission.title}의 ${roundIndex + 1}번째 장면은 다르게 보여.\n` +
+      `${toolMeta?.prompts[roundIndex % toolMeta.prompts.length] ?? "다른 가능성을 열어보자."}`;
+
+    return new ReadableStream({
+      async start(controller) {
+        const chars = narrative.split("");
+        for (let i = 0; i < chars.length; i++) {
+          controller.enqueue(encoder.encode(`event: token\ndata: ${JSON.stringify({ t: chars[i] })}\n\n`));
+          await new Promise((r) => setTimeout(r, 20));
+        }
+        controller.enqueue(encoder.encode(`event: complete\ndata: ${JSON.stringify({ narrative })}\n\n`));
+        controller.close();
+      },
+    });
+  }
+
+  const { systemPrompt, userPrompt } = buildThinkingToolPrompts(
+    mission, session, roundIndex, toolType, currentRound, previousReactions,
+  );
+
+  return callOpenRouterStream({
+    schema: thinkingToolSchema,
+    schemaName: "thinking_tool",
+    systemPrompt,
+    userPrompt,
+  });
+}
+
 async function generateEpilogue(
   mission: Mission,
   session: MissionSession,
@@ -2570,6 +2614,83 @@ export async function generateSessionThinkingTool(
   const card = await generateThinkingToolCard(mission, session, input.roundIndex, input.toolType, generatedRound, reactions);
   await store.upsertThinkingToolCard(session.id, input.roundIndex, input.toolType, card);
   return card;
+}
+
+export async function prepareSessionThinkingToolStream(
+  payload: AuthTokenPayload,
+  input: { sessionId: string; roundIndex: number; toolType: ExpansionToolType },
+): Promise<{ stream: ReadableStream<Uint8Array> }> {
+  const { store, session } = await getOwnedSession(payload, input.sessionId);
+  ensureSessionIsActive(session);
+
+  const generatedRound = await store.getGeneratedRound(session.id, input.roundIndex);
+  if (!generatedRound) {
+    throw new ApiError(409, "ROUND_NOT_READY", "Generate the round before requesting a thinking tool");
+  }
+
+  // If already generated, return as instant stream
+  const existingCard = await store.getThinkingToolCard(session.id, input.roundIndex, input.toolType);
+  if (existingCard) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(encoder.encode(`event: complete\ndata: ${JSON.stringify({ narrative: existingCard.card.narrative })}\n\n`));
+        controller.close();
+      },
+    });
+    return { stream };
+  }
+
+  const mission = await store.getMission(session.missionId);
+  if (!mission) {
+    throw new ApiError(404, "MISSION_NOT_FOUND", "Mission was not found");
+  }
+
+  const reactions = await store.listReactionsBySession(session.id);
+  const rawStream = generateThinkingToolStream(mission, session, input.roundIndex, input.toolType, generatedRound, reactions);
+
+  const toolMeta =
+    mission.aiContext.expansionTools.find((tool) => tool.type === input.toolType) ??
+    mission.aiContext.expansionTools[0];
+
+  // Wrap to auto-save on complete
+  const encoder = new TextEncoder();
+  const savedStream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const reader = rawStream.getReader();
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const text = new TextDecoder().decode(value);
+          if (text.includes("event: complete\n")) {
+            const dataMatch = text.match(/event: complete\ndata: (.+)\n/);
+            if (dataMatch?.[1]) {
+              try {
+                const parsed = JSON.parse(dataMatch[1]);
+                const card: ThinkingToolCard = {
+                  type: input.toolType,
+                  label: toolMeta?.label ?? input.toolType,
+                  emoji: input.toolType === "broaden" ? "🔭" : input.toolType === "reframe" ? "🔄" : "🌀",
+                  card: { narrative: parsed.narrative },
+                };
+                await store.upsertThinkingToolCard(session.id, input.roundIndex, input.toolType, card);
+              } catch {
+                // Save failed — not fatal
+              }
+            }
+          }
+
+          controller.enqueue(value);
+        }
+      } finally {
+        controller.close();
+      }
+    },
+  });
+
+  return { stream: savedStream };
 }
 
 export async function generateSessionEpilogue(payload: AuthTokenPayload, input: { sessionId: string }) {

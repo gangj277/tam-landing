@@ -387,6 +387,74 @@ export async function generateThinkingTool(sessionId: string, roundIndex: number
   );
 }
 
+export async function streamThinkingTool(
+  sessionId: string,
+  roundIndex: number,
+  toolType: string,
+  onNarrative: (text: string) => void,
+  onComplete: (narrative: string) => void,
+  onError: (message: string) => void,
+): Promise<void> {
+  const res = await fetch(`${"/api"}/ai/thinking-tool-stream`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sessionId, roundIndex, toolType }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    onError(body?.error?.message ?? `HTTP ${res.status}`);
+    return;
+  }
+
+  if (!res.body) {
+    onError("No response body");
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    let currentEvent = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim();
+      } else if (line.startsWith("data: ")) {
+        const data = line.slice(6);
+        try {
+          const parsed = JSON.parse(data);
+          if (currentEvent === "token" && parsed.t) {
+            accumulated += parsed.t;
+            // Extract narrative from partial JSON: {"narrative":"TEXT..."}
+            const narrative = extractNarrativeFromPartialJson(accumulated);
+            if (narrative) {
+              onNarrative(narrative);
+            }
+          } else if (currentEvent === "complete") {
+            onComplete(parsed.narrative ?? accumulated);
+          } else if (currentEvent === "error") {
+            onError(parsed.message ?? "Stream error");
+          }
+        } catch {
+          // skip malformed lines
+        }
+        currentEvent = "";
+      }
+    }
+  }
+}
+
 export async function generateEpilogue(sessionId: string) {
   return request<{ epilogue: GeneratedEpilogue }>(
     "/ai/epilogue",

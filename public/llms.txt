@@ -4,6 +4,10 @@
 
 ## 핵심 콘텐츠
 
+- [고교학점제 완벽 가이드](https://tam.kr/guide/gogyohakjeomje): 2025 전면시행 고교학점제의 모든 것 — 192학점 졸업 요건, 138개 선택과목, 5등급 평가체계, 학부모 준비 가이드
+- [자유학기제 완벽 가이드](https://tam.kr/guide/jayuhakgije): 2025년 크게 축소된 자유학기제 — 221시간→102시간, 활동 4개→2개, 학부모 대응법
+- [AI 시대 진로 준비 가이드](https://tam.kr/guide/ai-era-career): AI 시대 핵심 역량, 코딩보다 중요한 것, WEF 자기인식 5위, 10-14세 골든타임 근거
+- [초등 고학년 진로탐색 가이드](https://tam.kr/guide/elementary-career-exploration): 초등학생 20.4% 희망직업 없음, 42%는 '뭘 좋아하는지 몰라서', 탐색 vs 결정
 - [고교학점제 시대, 과목 선택 전에 필요한 단 하나](https://tam.kr/blog/gogyohakjeomje-self-understanding): 2025 전면시행 고교학점제, 과목 선택의 진짜 기준은 자기이해
 - [AI가 다 해주는 시대, 우리 아이에게 진짜 남는 건](https://tam.kr/blog/ai-era-child-self-understanding): AI 시대에 아이의 자기이해가 중요한 이유
 - [성격검사 말고, 진짜 자기이해는 경험에서 옵니다](https://tam.kr/blog/experience-based-self-discovery): 경험을 통한 자기발견이 작동하는 원리

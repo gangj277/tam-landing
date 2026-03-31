@@ -12,7 +12,7 @@ import {
   recordClosing,
   completeSession,
   streamScenarioRound,
-  generateThinkingTool,
+  streamThinkingTool,
   generateEpilogue,
   generateMirror,
   ApiError,
@@ -21,7 +21,6 @@ import type {
   MissionData,
   GeneratedRound,
   GeneratedEpilogue,
-  ThinkingToolCardResult,
 } from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
 
@@ -155,53 +154,109 @@ function NarrativeCard({
   );
 }
 
-// ─── Thinking Tool Overlay ───
+// ─── Thinking Tool Inline Accordion ───
 
-function ThinkingToolOverlay({
-  tool,
+function ThinkingToolAccordion({
+  tools,
+  expandedTool,
+  streamingTexts,
+  loadingTool,
+  onToggle,
   color,
-  onClose,
 }: {
-  tool: ThinkingToolCardResult;
+  tools: { type: string; label: string; emoji: string }[];
+  expandedTool: string | null;
+  streamingTexts: Record<string, string>;
+  loadingTool: string | null;
+  onToggle: (toolType: string) => void;
   color: string;
-  onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center" onClick={onClose}>
-      <div className="absolute inset-0 bg-navy/30 backdrop-blur-sm" />
-      <div
-        className="relative w-full max-w-[430px] bg-white rounded-t-3xl p-6 pb-10"
-        onClick={(e) => e.stopPropagation()}
-        style={{ animation: "slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards" }}
-      >
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{tool.emoji}</span>
-            <span className="text-[13px] font-bold tracking-[-0.01em]" style={{ color }}>
-              {tool.label}
-            </span>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-bg-warm flex items-center justify-center tap-highlight">
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path d="M3 3l8 8M11 3l-8 8" stroke="#8A8A9A" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-        <div className="rounded-xl p-4" style={{ backgroundColor: `${color}08`, border: `1px solid ${color}20` }}>
-          {tool.card.narrative.split("\n").map((line, i) => (
-            <p
-              key={i}
-              className={`text-[14px] leading-[1.7] ${
-                line.startsWith("→") || line.startsWith("\u2192") ? "font-semibold text-navy mt-2" : "text-text-secondary"
-              }`}
-            >
-              {line}
-            </p>
-          ))}
-        </div>
-        <p className="text-[12px] text-text-muted text-center mt-4">
-          이건 참고용이야. 네 선택에는 영향 없어.
-        </p>
+    <div className="pt-2 transition-all duration-700 opacity-100" style={{ transitionDelay: "600ms" }}>
+      <p className="text-[12px] font-semibold text-text-muted tracking-[0.04em] mb-2.5 uppercase">
+        궁금하면 눌러봐
+      </p>
+      <div className="rounded-2xl border border-border-light bg-white overflow-hidden" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}>
+        {tools.map((tool, i) => {
+          const isExpanded = expandedTool === tool.type;
+          const narrativeText = streamingTexts[tool.type] ?? "";
+          const isLoading = loadingTool === tool.type;
+          const hasContent = narrativeText.length > 0;
+
+          return (
+            <div key={tool.type}>
+              <button
+                onClick={() => onToggle(tool.type)}
+                className={`w-full flex items-center gap-3.5 px-4 py-3.5 tap-highlight transition-all duration-200 ${
+                  i < tools.length - 1 && !isExpanded ? "border-b border-border-light" : ""
+                }`}
+                style={{
+                  backgroundColor: isExpanded ? `${color}06` : "transparent",
+                }}
+              >
+                <span className="text-xl flex-shrink-0">
+                  {isLoading && !hasContent ? "⏳" : tool.emoji}
+                </span>
+                <span className="flex-1 text-left text-[14px] font-medium text-text-secondary leading-[1.5]">
+                  {tool.label}
+                </span>
+                <svg
+                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+                  className={`flex-shrink-0 text-text-muted transition-transform duration-300 ${isExpanded ? "rotate-90" : ""}`}
+                >
+                  <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+
+              {/* Expandable content */}
+              <div
+                className="overflow-hidden transition-all duration-400 ease-out"
+                style={{
+                  maxHeight: isExpanded ? "500px" : "0px",
+                  opacity: isExpanded ? 1 : 0,
+                }}
+              >
+                <div className="px-4 pb-4">
+                  <div className="rounded-xl p-4" style={{ backgroundColor: `${color}08`, border: `1px solid ${color}15` }}>
+                    {hasContent ? (
+                      <>
+                        {narrativeText.split("\n").map((line, li) => (
+                          <p
+                            key={li}
+                            className={`text-[14px] leading-[1.7] ${
+                              line.startsWith("→") || line.startsWith("\u2192")
+                                ? "font-semibold text-navy mt-2"
+                                : "text-text-secondary"
+                            }`}
+                          >
+                            {line}
+                          </p>
+                        ))}
+                        {isLoading && (
+                          <span className="inline-block w-0.5 h-4 ml-0.5 bg-navy/40 animate-pulse align-text-bottom" />
+                        )}
+                      </>
+                    ) : isLoading ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <div
+                          className="w-4 h-4 rounded-full border-2 border-transparent animate-spin"
+                          style={{ borderTopColor: color, borderRightColor: `${color}40` }}
+                        />
+                        <span className="text-[13px] text-text-muted">생각을 정리하고 있어...</span>
+                      </div>
+                    ) : null}
+                  </div>
+                  {hasContent && !isLoading && (
+                    <p className="text-[11px] text-text-muted text-center mt-2.5">
+                      참고용이야. 네 선택에는 영향 없어.
+                    </p>
+                  )}
+                </div>
+                {i < tools.length - 1 && <div className="border-b border-border-light" />}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -500,8 +555,9 @@ export default function MissionPlayPage({
   const [selectedMethod, setSelectedMethod] = useState<string | null>(null);
   const [showNarrative, setShowNarrative] = useState(false);
   const [showReaction, setShowReaction] = useState(false);
-  const [activeTool, setActiveTool] = useState<ThinkingToolCardResult | null>(null);
+  const [expandedTool, setExpandedTool] = useState<string | null>(null);
   const [loadingTool, setLoadingTool] = useState<string | null>(null);
+  const [toolStreamingTexts, setToolStreamingTexts] = useState<Record<string, string>>({});
   const [streamingText, setStreamingText] = useState<string>(""); // narrative streaming in progress
   const [choiceHistory, setChoiceHistory] = useState<
     { emotionEmoji: string; emotionLabel: string; methodEmoji: string; methodLabel: string }[]
@@ -631,6 +687,8 @@ export default function MissionPlayPage({
     setSelectedMethod(null);
     setShowNarrative(true);
     setShowReaction(false);
+    setExpandedTool(null);
+    setToolStreamingTexts({});
     setPhase({ type: "streaming-round", roundIndex });
 
     await streamScenarioRound(
@@ -704,18 +762,43 @@ export default function MissionPlayPage({
     }
   }
 
-  async function handleThinkingTool(toolType: string) {
+  async function handleToggleTool(toolType: string) {
     if (!sessionId || phase.type !== "scenario") return;
-    setLoadingTool(toolType);
 
+    // If already expanded, just collapse
+    if (expandedTool === toolType) {
+      setExpandedTool(null);
+      return;
+    }
+
+    // Expand this tool
+    setExpandedTool(toolType);
+
+    // If already loaded, no need to fetch again
+    if (toolStreamingTexts[toolType]) return;
+
+    // Stream the thinking tool content
+    setLoadingTool(toolType);
     try {
       await recordToolUsage(sessionId, phase.roundIndex, toolType);
-      const { card } = await generateThinkingTool(sessionId, phase.roundIndex, toolType);
-      setActiveTool(card);
+      await streamThinkingTool(
+        sessionId,
+        phase.roundIndex,
+        toolType,
+        (text) => {
+          setToolStreamingTexts((prev) => ({ ...prev, [toolType]: text }));
+        },
+        (narrative) => {
+          setToolStreamingTexts((prev) => ({ ...prev, [toolType]: narrative }));
+          setLoadingTool(null);
+        },
+        () => {
+          setLoadingTool(null);
+        },
+      );
     } catch {
-      // Show inline error
+      setLoadingTool(null);
     }
-    setLoadingTool(null);
   }
 
   async function handleClosingSubmit(text: string) {
@@ -870,33 +953,14 @@ export default function MissionPlayPage({
               </div>
             )}
             {showReaction && (
-              <div className="pt-2 transition-all duration-700 opacity-100" style={{ transitionDelay: "600ms" }}>
-                <p className="text-[12px] font-semibold text-text-muted tracking-[0.04em] mb-2.5 uppercase">
-                  궁금하면 눌러봐
-                </p>
-                <div className="rounded-2xl border border-border-light bg-white overflow-hidden" style={{ boxShadow: "0 1px 8px rgba(0,0,0,0.03)" }}>
-                  {currentRound.thinkingTools.map((tool, i) => (
-                    <button
-                      key={tool.type}
-                      onClick={() => handleThinkingTool(tool.type)}
-                      disabled={loadingTool === tool.type}
-                      className={`w-full flex items-center gap-3.5 px-4 py-3.5 tap-highlight transition-all duration-200 disabled:opacity-50 ${
-                        i < currentRound.thinkingTools.length - 1 ? "border-b border-border-light" : ""
-                      }`}
-                    >
-                      <span className="text-xl flex-shrink-0">
-                        {loadingTool === tool.type ? "⏳" : tool.emoji}
-                      </span>
-                      <span className="flex-1 text-left text-[14px] font-medium text-text-secondary leading-[1.5]">
-                        {tool.label}
-                      </span>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0 text-text-muted">
-                        <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <ThinkingToolAccordion
+                tools={currentRound.thinkingTools}
+                expandedTool={expandedTool}
+                streamingTexts={toolStreamingTexts}
+                loadingTool={loadingTool}
+                onToggle={handleToggleTool}
+                color={categoryColor}
+              />
             )}
           </div>
         )}
@@ -959,10 +1023,6 @@ export default function MissionPlayPage({
         )}
       </div>
 
-      {/* ─── Thinking Tool Overlay ─── */}
-      {activeTool && (
-        <ThinkingToolOverlay tool={activeTool} color={categoryColor} onClose={() => setActiveTool(null)} />
-      )}
 
       <style>{`
         @keyframes slideUp {

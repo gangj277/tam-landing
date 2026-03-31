@@ -5,6 +5,9 @@ import type { BlogPostMeta } from "@/lib/blog";
 import { BlogHeader } from "@/components/blog/BlogHeader";
 import { Breadcrumbs } from "@/components/blog/Breadcrumbs";
 import { RelatedPosts } from "@/components/blog/RelatedPosts";
+import { ReadingProgress } from "@/components/blog/ReadingProgress";
+import { TableOfContents } from "@/components/blog/TableOfContents";
+import { BackToTop } from "@/components/blog/BackToTop";
 
 export async function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
@@ -168,23 +171,59 @@ export default async function BlogPostPage({
       <FAQJsonLd faqs={post.faq} />
       <BreadcrumbJsonLd post={post} />
 
-      <article className="mx-auto max-w-[720px] px-6 py-12 md:py-20">
-        <Breadcrumbs
-          items={[
-            { label: "홈", href: "/" },
-            { label: "블로그", href: "/blog" },
-            { label: post.title },
-          ]}
-        />
-        <BlogHeader post={post} />
-        <div className="border-t border-border-light pt-8">
-          <Post />
-        </div>
-      </article>
+      {/* Reading progress bar */}
+      <ReadingProgress />
 
+      {/* Article + optional ToC sidebar */}
+      <div className="mx-auto max-w-[1120px] px-6 py-12 md:py-20">
+        <div className="flex gap-12 lg:gap-16 justify-center">
+          {/* Main article column */}
+          <article className="w-full max-w-[720px] min-w-0">
+            <Breadcrumbs
+              items={[
+                { label: "홈", href: "/" },
+                { label: "블로그", href: "/blog" },
+                { label: post.title },
+              ]}
+            />
+            <BlogHeader post={post} />
+
+            {/* Decorative separator */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-coral/20 via-border-light to-transparent" />
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                className="text-coral/30 shrink-0"
+              >
+                <path
+                  d="M8 2L10 6L14 6.5L11 9.5L12 14L8 12L4 14L5 9.5L2 6.5L6 6L8 2Z"
+                  fill="currentColor"
+                />
+              </svg>
+              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-border-light to-coral/20" />
+            </div>
+
+            {/* MDX content */}
+            <div>
+              <Post />
+            </div>
+          </article>
+
+          {/* Table of contents sidebar (desktop only) */}
+          <TableOfContents />
+        </div>
+      </div>
+
+      {/* Related posts */}
       <div className="mx-auto max-w-[720px] px-6 pb-16 md:pb-24">
         <RelatedPosts posts={relatedPosts} />
       </div>
+
+      {/* Back to top button */}
+      <BackToTop />
     </>
   );
 }

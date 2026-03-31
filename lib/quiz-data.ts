@@ -90,7 +90,7 @@ export const ALL_QUIZZES: QuizMeta[] = [
     questionCount: 9,
     description:
       "부모의 예측과 아이의 실제 사이의 간극을 이해도 지도로 보여줍니다.",
-    available: false,
+    available: true,
   },
   {
     slug: "2030-readiness",

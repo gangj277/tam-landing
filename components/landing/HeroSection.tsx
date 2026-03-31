@@ -159,9 +159,9 @@ export default function HeroSection() {
               : "opacity-0 translate-y-6"
           }`}
         >
-          매일 10분, AI와 함께 새로운 세계를 탐험하며
+          매일 10분, AI와 함께 새로운 세계를 탐험하고
           <br className="hidden sm:block" />
-          생각하는 힘과 자기만의 기준을 키워가는 경험 플랫폼
+          현실과 연결하며 자기만의 진로를 발견하는 경험 플랫폼
         </p>
 
         {/* CTA */}

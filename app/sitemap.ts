@@ -24,6 +24,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.9,
     },
+    {
+      url: "https://tam.kr/guide",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: "https://tam.kr/guide/gogyohakjeomje",
+      lastModified: new Date("2026-03-31"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: "https://tam.kr/guide/jayuhakgije",
+      lastModified: new Date("2026-03-31"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: "https://tam.kr/guide/ai-era-career",
+      lastModified: new Date("2026-03-31"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
+    {
+      url: "https://tam.kr/guide/elementary-career-exploration",
+      lastModified: new Date("2026-03-31"),
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
     ...blogEntries,
   ];
 }

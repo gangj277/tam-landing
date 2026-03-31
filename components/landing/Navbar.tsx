@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-export default function Navbar() {
+export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -71,11 +71,18 @@ export default function Navbar() {
           </div>
         </a>
 
-        {/* Nav buttons */}
+        {/* Nav links + buttons */}
         <div className="flex items-center gap-2">
+          {/* Always visible nav links */}
+          <a
+            href="/guide"
+            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors hidden sm:block"
+          >
+            학부모 가이드
+          </a>
           <a
             href="/blog"
-            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"
+            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors hidden sm:block"
           >
             블로그
           </a>
@@ -85,22 +92,48 @@ export default function Navbar() {
           >
             무료 진단
           </a>
-          <a
-            href="/login"
-            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"
-          >
-            로그인
-          </a>
-          <a
-            href="/signup"
-            className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 ${
-              scrolled
-                ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
-                : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
-            }`}
-          >
-            시작하기
-          </a>
+
+          {/* Auth-dependent CTA */}
+          {isLoggedIn ? (
+            <a
+              href="/home"
+              className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 flex items-center gap-1.5 ${
+                scrolled
+                  ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
+                  : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
+              }`}
+            >
+              오늘의 탐험
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M3 7h8M8 4l3 3-3 3"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </a>
+          ) : (
+            <>
+              <a
+                href="/login"
+                className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"
+              >
+                로그인
+              </a>
+              <a
+                href="/signup"
+                className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 ${
+                  scrolled
+                    ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
+                    : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
+                }`}
+              >
+                시작하기
+              </a>
+            </>
+          )}
         </div>
       </div>
     </nav>

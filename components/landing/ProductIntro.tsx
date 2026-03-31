@@ -68,7 +68,7 @@ export default function ProductIntro() {
             }`}
             style={{ transitionDelay: "100ms" }}
           >
-            매일 10분, 새로운 세계가 열립니다
+            하루는 탐험, 다음 날은 현실 탐구
           </h2>
 
           <p
@@ -77,9 +77,9 @@ export default function ProductIntro() {
             }`}
             style={{ transitionDelay: "200ms" }}
           >
-            앱을 열면 오늘의 세계가 바로 시작됩니다.
+            판타지 세계에서 경험하고, 다음 날 현실 사례로 깊이 탐구합니다.
             <br />
-            긴 설명도, 복잡한 설정도 없습니다.
+            매일 10분, 긴 설명도 복잡한 설정도 없습니다.
           </p>
         </div>
 

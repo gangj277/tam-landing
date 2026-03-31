@@ -6,11 +6,13 @@ import {
   getQuizBySlug,
   getResultType,
   calculateDnaResult,
+  ALL_QUIZZES,
   type Quiz,
   type QuizQuestion,
   type QuizResultType,
 } from "@/lib/quiz-data";
 import { QuizIcon } from "@/lib/quiz-icons";
+import HiddenWorldQuiz from "@/components/hidden-world-quiz";
 
 type Phase = "intro" | "playing" | "calculating" | "result";
 
@@ -21,6 +23,12 @@ export default function QuizPlayPage({
 }) {
   const { slug } = use(params);
   const router = useRouter();
+
+  // Hidden-world quiz has its own dedicated component
+  if (slug === "hidden-world") {
+    return <HiddenWorldQuiz />;
+  }
+
   const quiz = getQuizBySlug(slug);
 
   const [phase, setPhase] = useState<Phase>("intro");

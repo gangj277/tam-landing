@@ -1,85 +1,44 @@
 "use client";
 
-import { useState } from "react";
 import { useInView } from "@/lib/useInView";
 
-const steps = [
+const days = [
   {
-    num: "01",
-    title: "세계에 들어간다",
-    subtitle: "Encounter",
-    desc: "오늘은 어떤 세계일까?\n화성 도시의 시장, 해양 연구선의 선장,\n미래 박물관의 큐레이터...\n매일 전혀 다른 세계와 역할이 열립니다.",
+    type: "mission" as const,
+    label: "미션",
+    title: "화성 첫 도시의 시장",
+    desc: "물이 부족한 화성 도시에서 시장이 되어 농장과 병원 중 어디에 먼저 물을 보낼지 결정한다.",
+    tags: ["판타지 세계", "역할 놀이", "가치 선택"],
     color: "#4A5FC1",
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="14" stroke="#4A5FC1" strokeWidth="1.5" strokeDasharray="4 3" />
-        <path d="M18 8l2 6h6l-5 4 2 6-5-4-5 4 2-6-5-4h6l2-6z" fill="#4A5FC1" fillOpacity="0.15" stroke="#4A5FC1" strokeWidth="1" />
-      </svg>
-    ),
   },
   {
-    num: "02",
-    title: "선택한다",
-    subtitle: "Choice",
-    desc: "정답은 없습니다. 가치의 선택만 있습니다.\n효율과 공정 사이에서, 안전과 모험 사이에서,\n아이는 자기만의 기준으로 고릅니다.",
+    type: "deepdive" as const,
+    label: "딥다이브",
+    title: "실제 가뭄 지역의 자원 배분",
+    desc: "2024년 케냐의 물 부족 위기 — 실제로 어떻게 배분을 결정했을까? 어제 화성에서 내린 결정과 비교하며 자기 생각을 정리한다.",
+    tags: ["현실 사례", "탐구 정리", "포트폴리오"],
     color: "#E8614D",
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <path d="M10 18h16" stroke="#E8614D" strokeWidth="1.5" strokeLinecap="round" />
-        <path d="M18 10v16" stroke="#E8614D" strokeWidth="1.5" strokeLinecap="round" />
-        <circle cx="10" cy="18" r="3" fill="#E8614D" fillOpacity="0.15" stroke="#E8614D" strokeWidth="1" />
-        <circle cx="26" cy="18" r="3" fill="#E8614D" fillOpacity="0.15" stroke="#E8614D" strokeWidth="1" />
-      </svg>
-    ),
   },
   {
-    num: "03",
-    title: "깊이 들어간다",
-    subtitle: "Deepen",
-    desc: "선택의 파급이 예상 못한 곳으로 번집니다.\n새로운 사람이 등장하고, 숨겨진 문제가 드러나고,\n가장 어려운 순간을 마주합니다.",
-    color: "#D4A853",
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <path d="M18 6v24" stroke="#D4A853" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="4 3" />
-        <circle cx="18" cy="12" r="4" stroke="#D4A853" strokeWidth="1.2" fill="#D4A853" fillOpacity="0.08" />
-        <circle cx="18" cy="22" r="6" stroke="#D4A853" strokeWidth="1.5" fill="#D4A853" fillOpacity="0.12" />
-        <circle cx="18" cy="22" r="2" fill="#D4A853" fillOpacity="0.3" />
-      </svg>
-    ),
-  },
-  {
-    num: "04",
-    title: "행동한다",
-    subtitle: "Act",
-    desc: "선택만 하고 끝나지 않습니다.\nAI와 함께 아이디어를 넓히고,\n다른 시각으로 바꿔보고,\n직접 결과물을 만들어봅니다.",
-    color: "#E8614D",
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <rect x="8" y="12" width="20" height="14" rx="2" stroke="#E8614D" strokeWidth="1.5" fill="#E8614D" fillOpacity="0.08" />
-        <path d="M14 19h8M14 23h5" stroke="#E8614D" strokeWidth="1.2" strokeLinecap="round" />
-        <path d="M24 8l-4 4h3v2" stroke="#E8614D" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  {
-    num: "05",
-    title: "발견한다",
-    subtitle: "Mirror",
-    desc: '"오늘은 완성도보다 독특함을 택했네요."\n"다른 사람의 반응을 많이 생각하면서 골랐어요."\n\n평가가 아니라 거울입니다.',
+    type: "mission" as const,
+    label: "미션",
+    title: "동물구조센터 브랜딩 디자이너",
+    desc: "아무도 모르는 동물구조센터를 사람들이 관심 갖게 만들 포스터를 만든다. 귀엽게 갈까, 진지하게 갈까?",
+    tags: ["판타지 세계", "창작 판단", "소통"],
     color: "#4A5FC1",
-    icon: (
-      <svg width="36" height="36" viewBox="0 0 36 36" fill="none">
-        <circle cx="18" cy="18" r="12" stroke="#4A5FC1" strokeWidth="1.5" fill="#4A5FC1" fillOpacity="0.06" />
-        <circle cx="18" cy="18" r="6" stroke="#4A5FC1" strokeWidth="1" strokeDasharray="3 2" />
-        <circle cx="18" cy="18" r="2" fill="#4A5FC1" />
-      </svg>
-    ),
+  },
+  {
+    type: "deepdive" as const,
+    label: "딥다이브",
+    title: "실제 NGO는 어떻게 관심을 끌까?",
+    desc: "유니세프, 그린피스가 쓰는 실제 캠페인 전략을 살펴보고, 어제 만든 포스터 접근법과 비교하며 의견을 정리한다.",
+    tags: ["현실 사례", "분석", "포트폴리오"],
+    color: "#E8614D",
   },
 ];
 
 export default function HowItWorks() {
   const { ref, isInView } = useInView(0.1);
-  const [active, setActive] = useState(0);
 
   return (
     <section ref={ref} className="relative py-24 md:py-32 px-6">
@@ -98,124 +57,111 @@ export default function HowItWorks() {
             <div className="w-8 h-[1px] bg-coral" />
           </div>
           <h2
-            className={`text-[28px] md:text-[40px] font-bold tracking-[-0.03em] text-navy mb-4 transition-all duration-700 ${
+            className={`text-[28px] md:text-[40px] font-bold tracking-[-0.03em] text-navy mb-5 transition-all duration-700 ${
               isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
             style={{ transitionDelay: "100ms" }}
           >
-            하루 한 번, 다섯 단계의 경험
+            하루는 탐험, 다음 날은 탐구
           </h2>
           <p
-            className={`text-[15px] md:text-[17px] leading-[1.7] text-text-secondary transition-all duration-700 ${
+            className={`text-[15px] md:text-[17px] leading-[1.8] text-text-secondary max-w-[520px] mx-auto transition-all duration-700 ${
               isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
             }`}
             style={{ transitionDelay: "200ms" }}
           >
-            매일의 경험은 같은 구조로 반복됩니다.
+            판타지 세계에서 발견한 관심을,
             <br />
-            아이는 익숙한 리듬 속에서 매일 다른 세계를 경험합니다.
+            다음 날 현실 사례로 깊이 있게 탐구합니다.
+            <br />
+            <span className="text-navy font-medium">이 두 가지가 쌓여 진로 탐색 포트폴리오가 됩니다.</span>
           </p>
         </div>
 
-        {/* Steps — horizontal stepper on desktop, vertical on mobile */}
+        {/* Alternating timeline */}
         <div
-          className={`transition-all duration-700 ${
+          className={`max-w-[800px] mx-auto transition-all duration-700 ${
             isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           }`}
           style={{ transitionDelay: "400ms" }}
         >
-          {/* Desktop horizontal step indicators */}
-          <div className="hidden md:flex items-center justify-center gap-0 mb-12">
-            {steps.map((s, i) => (
-              <div key={i} className="flex items-center">
-                <button
-                  onClick={() => setActive(i)}
-                  className={`flex items-center gap-3 px-5 py-3 rounded-full transition-all duration-300 ${
-                    active === i
-                      ? "bg-card-bg shadow-[0_2px_12px_rgba(26,26,46,0.08)] border border-border-light"
-                      : "hover:bg-navy/[0.03]"
-                  }`}
-                >
-                  <span
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-[13px] font-bold transition-all duration-300 ${
-                      active === i
-                        ? "text-white"
-                        : "bg-navy/[0.05] text-text-muted"
-                    }`}
-                    style={active === i ? { background: s.color } : {}}
-                  >
-                    {i + 1}
-                  </span>
-                  <span
-                    className={`text-[14px] font-medium transition-colors duration-300 ${
-                      active === i ? "text-navy" : "text-text-muted"
-                    }`}
-                  >
-                    {s.title}
-                  </span>
-                </button>
-                {i < steps.length - 1 && (
-                  <div className="w-8 h-[1px] bg-border-light mx-1" />
-                )}
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-6 mb-10">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#4A5FC1]" />
+              <span className="text-[13px] font-medium text-text-secondary">미션 — 판타지 세계</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-[#E8614D]" />
+              <span className="text-[13px] font-medium text-text-secondary">딥다이브 — 현실 탐구</span>
+            </div>
+          </div>
+
+          {/* Day cards */}
+          <div className="space-y-4">
+            {days.map((day, i) => (
+              <div
+                key={i}
+                className={`relative flex gap-4 md:gap-6 transition-all duration-700 ${
+                  isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+                }`}
+                style={{ transitionDelay: `${500 + i * 120}ms` }}
+              >
+                {/* Timeline dot + line */}
+                <div className="flex flex-col items-center flex-shrink-0 pt-1">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-bold text-white" style={{ background: day.color }}>
+                    {day.type === "mission" ? "M" : "D"}
+                  </div>
+                  {i < days.length - 1 && (
+                    <div className="w-[2px] flex-1 mt-2 rounded-full" style={{ background: `${days[i + 1].color}20` }} />
+                  )}
+                </div>
+
+                {/* Card */}
+                <div className={`flex-1 bg-card-bg rounded-2xl border p-5 md:p-6 mb-2 transition-all duration-300 hover:shadow-[0_4px_20px_rgba(26,26,46,0.05)] ${
+                  day.type === "mission" ? "border-[#4A5FC1]/10" : "border-[#E8614D]/10"
+                }`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span
+                      className="text-[10px] font-bold tracking-[0.06em] uppercase px-2 py-0.5 rounded"
+                      style={{ color: day.color, background: `${day.color}10` }}
+                    >
+                      Day {i + 1} · {day.label}
+                    </span>
+                  </div>
+                  <h3 className="text-[16px] font-bold text-navy tracking-[-0.01em] mb-2">
+                    {day.title}
+                  </h3>
+                  <p className="text-[13px] leading-[1.7] text-text-secondary mb-3">
+                    {day.desc}
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {day.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-[11px] font-medium px-2 py-0.5 rounded-full"
+                        style={{ color: day.color, background: `${day.color}08` }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               </div>
             ))}
           </div>
 
-          {/* Mobile vertical list */}
-          <div className="md:hidden space-y-3 mb-8">
-            {steps.map((s, i) => (
-              <button
-                key={i}
-                onClick={() => setActive(i)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300 text-left ${
-                  active === i
-                    ? "bg-card-bg shadow-[0_2px_12px_rgba(26,26,46,0.06)] border border-border-light"
-                    : "hover:bg-navy/[0.02]"
-                }`}
-              >
-                <span
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0 ${
-                    active === i ? "text-white" : "bg-navy/[0.05] text-text-muted"
-                  }`}
-                  style={active === i ? { background: s.color } : {}}
-                >
-                  {i + 1}
-                </span>
-                <span
-                  className={`text-[14px] font-medium ${
-                    active === i ? "text-navy" : "text-text-muted"
-                  }`}
-                >
-                  {s.title}
-                </span>
-                <span className="text-[11px] text-text-muted ml-auto">
-                  {s.subtitle}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {/* Active step detail */}
-          <div
-            key={active}
-            className="animate-fade-in max-w-[560px] mx-auto bg-card-bg rounded-2xl border border-border-light p-8 md:p-10"
-          >
-            <div className="flex items-start gap-4 mb-5">
-              <div className="flex-shrink-0 mt-1">{steps[active].icon}</div>
-              <div>
-                <span
-                  className="text-[11px] font-semibold tracking-[0.06em] uppercase mb-1 block"
-                  style={{ color: steps[active].color }}
-                >
-                  Step {steps[active].num} — {steps[active].subtitle}
-                </span>
-                <h3 className="text-[20px] font-bold text-navy tracking-[-0.02em]">
-                  {steps[active].title}
-                </h3>
+          {/* After timeline — continuation hint */}
+          <div className="flex items-center gap-4 mt-6 ml-4">
+            <div className="flex flex-col items-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-full bg-navy/[0.04] flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 3v8M3 7h8" stroke="#8A8A9A" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
               </div>
             </div>
-            <p className="text-[15px] leading-[1.8] text-text-secondary whitespace-pre-line">
-              {steps[active].desc}
+            <p className="text-[13px] text-text-muted">
+              Day 15부터는 AI가 아이의 패턴에 맞춰 미션과 딥다이브를 생성합니다
             </p>
           </div>
         </div>
