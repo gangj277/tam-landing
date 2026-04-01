@@ -12,14 +12,6 @@ const days = [
     color: "#4A5FC1",
   },
   {
-    type: "deepdive" as const,
-    label: "딥다이브",
-    title: "실제 가뭄 지역의 자원 배분",
-    desc: "2024년 케냐의 물 부족 위기 — 실제로 어떻게 배분을 결정했을까? 어제 화성에서 내린 결정과 비교하며 자기 생각을 정리한다.",
-    tags: ["현실 사례", "탐구 정리", "포트폴리오"],
-    color: "#E8614D",
-  },
-  {
     type: "mission" as const,
     label: "미션",
     title: "동물구조센터 브랜딩 디자이너",
@@ -28,12 +20,20 @@ const days = [
     color: "#4A5FC1",
   },
   {
-    type: "deepdive" as const,
-    label: "딥다이브",
-    title: "실제 NGO는 어떻게 관심을 끌까?",
-    desc: "유니세프, 그린피스가 쓰는 실제 캠페인 전략을 살펴보고, 어제 만든 포스터 접근법과 비교하며 의견을 정리한다.",
-    tags: ["현실 사례", "분석", "포트폴리오"],
+    type: "mission" as const,
+    label: "미션",
+    title: "학교 급식 공정성 위원회",
+    desc: "학교 급식 예산이 삭감되었다. 위원회 위원장으로서 어떤 기준으로 메뉴를 결정할지 고민한다.",
+    tags: ["현실 연결", "가치 충돌", "리더십"],
     color: "#E8614D",
+  },
+  {
+    type: "mission" as const,
+    label: "미션",
+    title: "심해 탐사대의 결정",
+    desc: "심해에서 발견한 미지의 생물 — 연구를 위해 포획할까, 생태계를 지키기 위해 놓아줄까?",
+    tags: ["관점 전환", "탐험", "판단"],
+    color: "#D4A853",
   },
 ];
 

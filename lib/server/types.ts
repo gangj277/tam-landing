@@ -267,8 +267,6 @@ export interface UserProfileSnapshot {
   createdAt: string;
   stats: {
     totalMissions: number;
-    totalDeepDives: number;
-    portfolioEntries: number;
     currentStreak: number;
     longestStreak: number;
     totalMinutes: number;
@@ -336,9 +334,7 @@ export interface AuthTokenPayload extends Record<string, unknown> {
   parentVerifiedAt?: string;
 }
 
-// ─── Deep-Dive Types ───
-
-export type DeepDiveStepType = "case" | "question" | "opinion" | "portfolio";
+// ─── Deep-Dive Types (v2 — shared) ───
 
 export interface DeepDiveRealWorldCase {
   headline: string;
@@ -347,20 +343,34 @@ export interface DeepDiveRealWorldCase {
   source?: string;
 }
 
-export interface DeepDiveStepOption {
-  id: string;
-  label: string;
+export interface ExpertPersona {
+  name: string;
+  role: string;
+  organization: string;
+  personality: string;
+  connectionToMission: string;
+  personalAnecdote: string;
 }
 
-export interface DeepDiveStep {
+export type DeepDiveTurnType = "arrival" | "case" | "question" | "insight" | "portfolio";
+export type DeepDiveInteractionType = "reaction" | "comparison" | "text" | "reflection" | "portfolio";
+
+export interface DeepDiveTurnOption {
+  id: string;
+  label: string;
+  valueTags?: string[];
+}
+
+export interface DeepDiveTurn {
   id: string;
   deepDiveId: string;
-  stepIndex: number;
-  type: DeepDiveStepType;
-  prompt: string;
-  response: string | null;
-  options?: DeepDiveStepOption[];
+  turnIndex: number;
+  type: DeepDiveTurnType;
+  expertMessage: string | null;
+  interactionType: DeepDiveInteractionType;
+  options?: DeepDiveTurnOption[];
   selectedOptionId?: string;
+  textResponse?: string;
   createdAt: string;
 }
 
@@ -369,9 +379,9 @@ export interface DeepDive {
   missionId: string;
   sessionId: string | null;
   childId: string;
-  title: string;
+  expert: ExpertPersona;
   realWorldCase: DeepDiveRealWorldCase;
-  steps: DeepDiveStep[];
+  turns: DeepDiveTurn[];
   portfolioEntry: string | null;
   status: "active" | "completed" | "expired";
   startedAt: string;

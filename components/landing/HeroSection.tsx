@@ -15,7 +15,7 @@ export default function HeroSection() {
       {/* Subtle gradient background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[#F4F2EE] via-[#FAFAF8] to-[#FAFAF8]" />
 
-      {/* Decorative floating elements — subtle world hints */}
+      {/* Decorative floating elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg
           className="absolute top-[12%] left-[8%] opacity-[0.04]"
@@ -25,22 +25,8 @@ export default function HeroSection() {
           fill="none"
         >
           <circle cx="60" cy="60" r="58" stroke="#1A1A2E" strokeWidth="1.5" />
-          <ellipse
-            cx="60"
-            cy="60"
-            rx="58"
-            ry="24"
-            stroke="#1A1A2E"
-            strokeWidth="1"
-          />
-          <line
-            x1="60"
-            y1="2"
-            x2="60"
-            y2="118"
-            stroke="#1A1A2E"
-            strokeWidth="1"
-          />
+          <ellipse cx="60" cy="60" rx="58" ry="24" stroke="#1A1A2E" strokeWidth="1" />
+          <line x1="60" y1="2" x2="60" y2="118" stroke="#1A1A2E" strokeWidth="1" />
         </svg>
         <svg
           className="absolute top-[18%] right-[10%] opacity-[0.035]"
@@ -49,12 +35,7 @@ export default function HeroSection() {
           viewBox="0 0 80 80"
           fill="none"
         >
-          <polygon
-            points="40,4 76,60 4,60"
-            stroke="#4A5FC1"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <polygon points="40,4 76,60 4,60" stroke="#4A5FC1" strokeWidth="1.5" fill="none" />
           <circle cx="40" cy="42" r="12" stroke="#4A5FC1" strokeWidth="1" />
         </svg>
         <svg
@@ -64,26 +45,8 @@ export default function HeroSection() {
           viewBox="0 0 100 100"
           fill="none"
         >
-          <rect
-            x="10"
-            y="10"
-            width="80"
-            height="80"
-            rx="4"
-            stroke="#E8614D"
-            strokeWidth="1.5"
-            fill="none"
-          />
-          <rect
-            x="25"
-            y="25"
-            width="50"
-            height="50"
-            rx="2"
-            stroke="#E8614D"
-            strokeWidth="1"
-            fill="none"
-          />
+          <rect x="10" y="10" width="80" height="80" rx="4" stroke="#E8614D" strokeWidth="1.5" fill="none" />
+          <rect x="25" y="25" width="50" height="50" rx="2" stroke="#E8614D" strokeWidth="1" fill="none" />
         </svg>
         <svg
           className="absolute bottom-[28%] right-[8%] opacity-[0.03]"
@@ -92,84 +55,77 @@ export default function HeroSection() {
           viewBox="0 0 90 90"
           fill="none"
         >
-          <path
-            d="M45 5 L85 45 L45 85 L5 45 Z"
-            stroke="#D4A853"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <path d="M45 5 L85 45 L45 85 L5 45 Z" stroke="#D4A853" strokeWidth="1.5" fill="none" />
         </svg>
       </div>
 
-      <div className="relative z-10 max-w-[680px] text-center">
-        {/* Tagline label */}
-        <div
-          className={`inline-flex items-center gap-2 mb-8 px-4 py-1.5 rounded-full bg-navy/[0.04] border border-navy/[0.06] transition-all duration-700 ${
-            mounted
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-4"
+      <div className="relative z-10 max-w-[760px] text-center">
+        {/* Vision declaration — the question */}
+        <p
+          className={`text-[15px] md:text-[17px] leading-[1.7] text-text-secondary font-medium mb-6 tracking-[-0.01em] transition-all duration-700 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
         >
-          <span className="w-1.5 h-1.5 rounded-full bg-coral animate-pulse" />
-          <span className="text-[12px] font-medium text-text-secondary tracking-[0.02em]">
-            AI 시대의 새로운 경험 플랫폼
+          AI 시대, 가장 중요한 건{" "}
+          <span className="text-text-muted line-through decoration-1">
+            코딩
           </span>
-        </div>
+          이 아닙니다. 그러면 무엇일까요?
+        </p>
 
-        {/* Main headline */}
+        {/* Main headline — the answer */}
         <h1
-          className={`text-[32px] md:text-[52px] lg:text-[56px] font-bold leading-[1.25] tracking-[-0.035em] text-navy mb-6 transition-all duration-700 delay-200 ${
-            mounted
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-6"
+          className={`text-[32px] md:text-[48px] lg:text-[56px] font-bold leading-[1.2] tracking-[-0.04em] text-navy mb-7 transition-all duration-700 delay-150 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          세상은 <span className="text-coral">AI</span>로
-          <br className="hidden md:block" /> 빠르게 바뀌고 있습니다.
-          <br />
-          <span className="mt-1 block">
-            우리 아이는{" "}
-            <span className="relative inline-block">
-              그 세상을
-              <svg
-                className="absolute -bottom-1 left-0 w-full"
-                height="6"
-                viewBox="0 0 200 6"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M0,5 Q50,0 100,4 T200,3"
-                  fill="none"
-                  stroke="#E8614D"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  opacity="0.4"
-                />
-              </svg>
-            </span>{" "}
-            경험하고 있나요?
+          <span className="relative inline-block">
+            자기 자신
+            <svg
+              className="absolute -bottom-1.5 left-0 w-full"
+              height="8"
+              viewBox="0 0 200 8"
+              preserveAspectRatio="none"
+            >
+              <path
+                d="M0,6 Q50,0 100,5 T200,4"
+                fill="none"
+                stroke="#E8614D"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                opacity="0.35"
+              />
+            </svg>
           </span>
+          을 아는 것입니다.
         </h1>
 
-        {/* Sub-copy */}
+        {/* Vision statement */}
         <p
-          className={`text-[16px] md:text-[18px] leading-[1.7] text-text-secondary font-normal max-w-[520px] mx-auto mb-10 transition-all duration-700 delay-400 ${
-            mounted
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-6"
+          className={`text-[16px] md:text-[19px] leading-[1.75] text-navy/80 font-normal max-w-[560px] mx-auto mb-5 transition-all duration-700 delay-300 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          매일 10분, AI와 함께 새로운 세계를 탐험하고
+          모든 아이가 자기가 원하는 것을 이해하고,
           <br className="hidden sm:block" />
-          현실과 연결하며 자기만의 진로를 발견하는 경험 플랫폼
+          자기만의 정체성으로 살아가는 세상을 만듭니다.
+        </p>
+
+        {/* Data anchor — grounding the vision in reality */}
+        <p
+          className={`text-[14px] md:text-[15px] leading-[1.7] text-text-muted font-normal max-w-[480px] mx-auto mb-10 transition-all duration-700 delay-400 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+          }`}
+        >
+          그런데 지금, 중학생 10명 중 4명은 꿈이 없습니다.
+          <br />
+          이유의 절반은 &lsquo;내가 뭘 좋아하는지 몰라서&rsquo;.
         </p>
 
         {/* CTA */}
         <div
           className={`transition-all duration-700 delay-500 ${
-            mounted
-              ? "opacity-100 translate-y-0"
-              : "opacity-0 translate-y-6"
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
           <a
@@ -197,6 +153,15 @@ export default function HeroSection() {
             먼저 1분 무료 진단 해보기 →
           </a>
         </div>
+
+        {/* Source citation */}
+        <p
+          className={`mt-8 text-[11px] text-text-muted/50 transition-all duration-700 delay-700 ${
+            mounted ? "opacity-100" : "opacity-0"
+          }`}
+        >
+          교육부, 2024 초중등 진로교육 현황조사 (38,481명)
+        </p>
       </div>
 
       {/* Scroll indicator */}

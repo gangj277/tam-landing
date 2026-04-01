@@ -6,6 +6,7 @@ const BASE = "/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
+    cache: options?.cache ?? "no-store",
     credentials: "include",
     headers: { "Content-Type": "application/json", ...options?.headers },
     ...options,
@@ -545,51 +546,7 @@ export type TodayActivityResponse =
   | { type: "mission"; status: "sequence"; mission: MissionData; reason: string }
   | { type: "mission"; status: "choosing"; previews: MissionPreviewData[]; choiceSetId: string }
   | { type: "mission"; status: "chosen"; mission: MissionData; reason: string }
-  | { type: "deepdive"; deepDive: DeepDiveData; linkedMission: MissionData; reason: string }
-  | { type: "deepdive_pending"; linkedMission: MissionData; reason: string };
-
-export interface DeepDiveStepData {
-  id: string;
-  deepDiveId: string;
-  stepIndex: number;
-  type: "case" | "question" | "opinion" | "portfolio";
-  prompt: string;
-  response: string | null;
-  options?: { id: string; label: string }[];
-  selectedOptionId?: string;
-  createdAt: string;
-}
-
-export interface DeepDiveRealWorldCaseData {
-  headline: string;
-  context: string;
-  keyQuestion: string;
-  source?: string;
-}
-
-export interface DeepDiveData {
-  id: string;
-  missionId: string;
-  sessionId: string | null;
-  childId: string;
-  title: string;
-  realWorldCase: DeepDiveRealWorldCaseData;
-  steps: DeepDiveStepData[];
-  portfolioEntry: string | null;
-  status: "active" | "completed" | "expired";
-  startedAt: string;
-  completedAt: string | null;
-  createdAt: string;
-}
-
-export interface PortfolioEntry {
-  deepDiveId: string;
-  missionId: string;
-  missionTitle: string;
-  title: string;
-  portfolioEntry: string;
-  completedAt: string;
-}
+  | { type: "deepdive"; missionId: string; missionTitle: string; expert: ExpertPersonaData; deepDiveId: string | null };
 
 export async function getTodayActivity() {
   return request<TodayActivityResponse>("/activity/today");
@@ -597,50 +554,170 @@ export async function getTodayActivity() {
 
 // ─── Deep-Dive ───
 
+export interface ExpertPersonaData {
+  name: string;
+  role: string;
+  organization: string;
+}
+
+export interface DeepDiveTurnData {
+  id: string;
+  turnIndex: number;
+  type: string;
+  expertMessage: string | null;
+  interactionType: string;
+  options?: { id: string; label: string; valueTags?: string[] }[];
+  selectedOptionId?: string;
+  textResponse?: string;
+}
+
+export interface DeepDiveData {
+  id: string;
+  missionId: string;
+  expert: ExpertPersonaData & { personality: string; connectionToMission: string; personalAnecdote: string };
+  realWorldCase: { headline: string; context: string; keyQuestion: string; source?: string };
+  turns: DeepDiveTurnData[];
+  portfolioEntry: string | null;
+  status: string;
+}
+
+export interface PortfolioEntry {
+  deepDiveId: string;
+  missionTitle: string;
+  expertName: string;
+  title: string;
+  portfolioEntry: string;
+  completedAt: string;
+}
+
 export async function createDeepDive(missionId: string) {
-  return request<{ deepDive: DeepDiveData; reused: boolean }>(
+  return request<{ deepDiveId: string; reused: boolean }>(
     "/deepdive",
     { method: "POST", body: JSON.stringify({ missionId }) },
   );
 }
 
 export async function getDeepDive(id: string) {
-  return request<{ deepDive: DeepDiveData; linkedMission: MissionData | null }>(
-    `/deepdive/${id}`,
-  );
+  return request<{ deepDive: DeepDiveData }>(`/deepdive/${id}`);
 }
 
-export async function recordDeepDiveStep(
+export async function streamDeepDiveTurn(
   deepDiveId: string,
-  stepIndex: number,
-  response?: string,
+  turnIndex: number,
+  onToken: (text: string) => void,
+  onComplete: (message: string) => void,
+  onError: (err: Error) => void,
+): Promise<void> {
+  const res = await fetch(`${BASE}/deepdive/${deepDiveId}/stream`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ turnIndex }),
+  });
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    onError(new Error(body?.error?.message ?? `HTTP ${res.status}`));
+    return;
+  }
+
+  if (!res.body) {
+    onError(new Error("No response body"));
+    return;
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let accumulated = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    let currentEvent = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) {
+        currentEvent = line.slice(7).trim();
+      } else if (line.startsWith("data: ")) {
+        const data = line.slice(6);
+        try {
+          const parsed = JSON.parse(data);
+          if (currentEvent === "token" && parsed.t) {
+            accumulated += parsed.t;
+            // Extract expertMessage from partial JSON
+            const msg = extractExpertMessageFromPartial(accumulated);
+            if (msg) {
+              onToken(msg);
+            }
+          } else if (currentEvent === "complete") {
+            const finalMsg = parsed.expertMessage ?? accumulated;
+            onComplete(finalMsg);
+          } else if (currentEvent === "error") {
+            onError(new Error(parsed.message ?? "Stream error"));
+          }
+        } catch {
+          // skip malformed lines
+        }
+        currentEvent = "";
+      }
+    }
+  }
+}
+
+function extractExpertMessageFromPartial(accumulated: string): string {
+  const marker = '"expertMessage":"';
+  const startIdx = accumulated.indexOf(marker);
+  if (startIdx === -1) return "";
+
+  const contentStart = startIdx + marker.length;
+  let result = "";
+  let i = contentStart;
+  while (i < accumulated.length) {
+    const ch = accumulated[i];
+    if (ch === "\\") {
+      const next = accumulated[i + 1];
+      if (next === "n") { result += "\n"; i += 2; continue; }
+      if (next === '"') { result += '"'; i += 2; continue; }
+      if (next === "\\") { result += "\\"; i += 2; continue; }
+      if (next === "t") { result += "\t"; i += 2; continue; }
+      if (next === undefined) break;
+      result += next; i += 2; continue;
+    }
+    if (ch === '"') break;
+    result += ch;
+    i++;
+  }
+  return result;
+}
+
+export async function recordDeepDiveTurn(
+  deepDiveId: string,
+  turnIndex: number,
   selectedOptionId?: string,
+  textResponse?: string,
 ) {
   return request<{ ok: true }>(
-    `/deepdive/${deepDiveId}/step`,
+    `/deepdive/${deepDiveId}/turn`,
     {
       method: "POST",
-      body: JSON.stringify({ stepIndex, response, selectedOptionId }),
+      body: JSON.stringify({ turnIndex, selectedOptionId, textResponse }),
     },
   );
 }
 
-export async function generatePortfolioSentence(deepDiveId: string) {
-  return request<{ deepDiveId: string; portfolioSentence: string }>(
-    "/ai/deepdive-portfolio",
-    { method: "POST", body: JSON.stringify({ deepDiveId }) },
-  );
-}
-
-export async function completeDeepDiveSession(deepDiveId: string, portfolioEntry: string) {
-  return request<{ ok: true }>(
+export async function completeDeepDive(deepDiveId: string, portfolioEntry: string) {
+  return request<{ ok: true; completedAt: string }>(
     `/deepdive/${deepDiveId}/complete`,
     { method: "PATCH", body: JSON.stringify({ portfolioEntry }) },
   );
 }
 
-export async function getPortfolio(childId: string) {
-  return request<{ childId: string; entries: PortfolioEntry[] }>(
-    `/portfolio?childId=${childId}`,
-  );
+export async function getPortfolio(childId?: string) {
+  const q = childId ? `?childId=${childId}` : "";
+  return request<{ entries: PortfolioEntry[] }>(`/portfolio${q}`);
 }

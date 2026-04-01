@@ -114,3 +114,12 @@ export const generatedMissionSchema = z.object({
   estimatedMinutes: z.number(),
   ageRange: z.tuple([z.number(), z.number()]),
 });
+
+// Deep-dive: expert message is plain text wrapped in JSON for streaming compatibility
+export const deepDiveExpertMessageSchema = z.object({
+  expertMessage: z.string(),
+});
+
+export const deepDivePortfolioSchema = z.object({
+  portfolioEntry: z.string(),
+});

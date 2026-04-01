@@ -258,8 +258,11 @@ async function getTodayOrTomorrowMission(payload: AuthTokenPayload, dayOffset: n
 
   if (sequenceDay >= 1 && sequenceDay <= FIRST_14_DAY_SCHEDULE.length) {
     category = getAssignedCategoryForSequenceDay(sequenceDay);
-    reason = initialChoiceReason(category!);
-  } else {
+    if (category) {
+      reason = initialChoiceReason(category);
+    }
+  }
+  if (!category) {
     const seenCategories = new Set(
       previousAssignments
         .map((assignment) => missionsList.find((mission) => mission.id === assignment.missionId)?.category)

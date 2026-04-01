@@ -663,324 +663,324 @@ export const MISSIONS: Mission[] = [
 ];
 
 // ═══════════════════════════════════════
-// HARDCODED DEEP-DIVES (7개, 각 미션에 연결)
+// DEEP-DIVE v2: Hardcoded Expert Conversations
 // ═══════════════════════════════════════
 
-export interface HardcodedDeepDiveQuestion {
-  prompt: string;
-  options: { id: string; label: string }[];
-  followUpPrompt?: string;
+import type {
+  ExpertPersona,
+  DeepDiveRealWorldCase,
+  DeepDiveTurnType,
+  DeepDiveInteractionType,
+} from "./server/types";
+
+export interface HardcodedDeepDiveTurnTemplate {
+  type: DeepDiveTurnType;
+  interactionType: DeepDiveInteractionType;
+  hint: string;
 }
 
 export interface HardcodedDeepDive {
   missionId: string;
-  title: string;
-  realWorldCase: {
-    headline: string;
-    context: string;
-    keyQuestion: string;
-    source?: string;
+  expert: ExpertPersona;
+  realWorldCase: DeepDiveRealWorldCase;
+  turnTemplates: {
+    arrival: { hint: string };
+    case: { angle: string; personalStory: string };
+    question: { theme: string; bridgeToMission: string };
+    insight: { coreMessage: string };
   };
-  stepTemplates: {
-    caseIntro: string;
-    questions: HardcodedDeepDiveQuestion[];
-    opinionTemplate: string;
-    opinionScaffolds: string[];
+  interactionOptions: {
+    turn0: { id: string; label: string }[];
+    turn1: { id: string; label: string; valueTags: string[] }[];
+    turn3: { id: string; label: string; valueTags: string[] }[];
   };
 }
 
 export const HARDCODED_DEEP_DIVES: HardcodedDeepDive[] = [
-  // DD1: mission-mars-mayor → 케냐 물 부족
+  // ─── 1. 화성 도시 시장 → 민재 (유니세프 케냐) ───
   {
     missionId: "mission-mars-mayor",
-    title: "실제 가뭄 지역의 자원 배분",
-    realWorldCase: {
-      headline: "2024년 케냐 투르카나 지역 물 부족 위기",
-      context: "케냐 북부 투르카나 지역에서 3년 연속 가뭄이 이어졌어. 물이 부족해지자, 지역 정부는 농업용수와 식수 중 어디에 먼저 보낼지 결정해야 했어. 농업을 살리면 내년 식량이 확보되지만, 당장 마실 물이 없는 가정이 수천 곳이었어.",
-      keyQuestion: "네가 어제 화성에서 내린 결정과 이 실제 상황은 뭐가 같고 뭐가 달라?",
-      source: "UNICEF Kenya, 2024",
+    expert: {
+      name: "민재",
+      role: "인도주의 구호 코디네이터",
+      organization: "유니세프 케냐",
+      personality: "밝고 에너지 넘치는 반말체. '아 진짜?', 'ㅋㅋ 나도 그랬어' 같은 리액션을 잘 함. 현장 이야기를 생생하게 들려주는 스타일.",
+      connectionToMission: "화성 도시에서 물 배분 문제를 다뤘듯이, 현실에서도 한정된 자원을 어떻게 나눌지 매일 고민한다.",
+      personalAnecdote: "케냐 투르카나 지역에서 우물 하나를 두고 세 마을이 싸우는 걸 중재한 적이 있어. 결국 세 마을이 번갈아 쓰는 시간표를 만들었는데, 그게 지금까지 잘 되고 있거든.",
     },
-    stepTemplates: {
-      caseIntro: "어제 화성 아레스에서 물 배분을 결정했잖아? 실제로 지구에서도 비슷한 일이 일어나고 있어.",
-      questions: [
-        {
-          prompt: "화성과 케냐, 두 상황에서 가장 비슷한 점은 뭘까?",
-          options: [
-            { id: "q1-resource", label: "자원이 부족하다는 점" },
-            { id: "q1-leader", label: "누군가가 결정해야 한다는 점" },
-            { id: "q1-anxiety", label: "사람들이 불안해한다는 점" },
-            { id: "q1-time", label: "시간이 촉박하다는 점" },
-          ],
-        },
-        {
-          prompt: "가장 다른 점은 뭘까?",
-          options: [
-            { id: "q2-real", label: "케냐는 실제 사람들의 이야기라는 점" },
-            { id: "q2-scale", label: "케냐는 훨씬 많은 사람이 영향받는 점" },
-            { id: "q2-help", label: "지구에는 다른 나라가 도울 수 있다는 점" },
-            { id: "q2-result", label: "실제로 결과가 남는다는 점" },
-          ],
-        },
-        {
-          prompt: "네가 케냐 지역 관리자라면 어떻게 했을까?",
-          options: [],
-          followUpPrompt: "자유롭게 적어봐",
-        },
+    realWorldCase: {
+      headline: "케냐 투르카나: 세 마을, 하나의 우물",
+      context: "케냐 북부 투르카나 지역은 극심한 가뭄으로 물이 부족해요. 유니세프가 설치한 우물 하나를 세 마을 800명이 함께 써야 하는 상황이 벌어졌어요.",
+      keyQuestion: "한정된 물을 공정하게 나누려면 어떤 원칙이 필요할까?",
+      source: "UNICEF Kenya Field Report 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 화성 미션에서의 선택에 대한 공감 리액션. '물 배분 결정 진짜 어려웠지? 나도 비슷한 일을 매일 해 ㅋㅋ'" },
+      case: { angle: "투르카나 우물 분쟁의 구체적 에피소드", personalStory: "새벽 4시에 마을 어르신들이 모여서 회의하는 장면" },
+      question: { theme: "자원 분배의 공정성", bridgeToMission: "화성에서 물 배분을 결정한 것처럼, 여기서도 누가 먼저인지 정해야 해" },
+      insight: { coreMessage: "정답은 없지만, 모두가 납득하는 과정이 있으면 결과도 받아들일 수 있어" },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "excited", label: "와 진짜요? 대박!" },
+        { id: "curious", label: "어떻게 그런 일을 하게 됐어요?" },
+        { id: "surprised", label: "케냐에서요? 멀다..." },
       ],
-      opinionTemplate: "자원이 부족할 때 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "모두에게 공평하게 나누는 것",
-        "가장 급한 곳에 먼저 보내는 것",
-        "함께 해결 방법을 찾는 것",
-        "전문가의 판단을 따르는 것",
+      turn1: [
+        { id: "fair-share", label: "인구 비례로 나눠야지!", valueTags: ["fairness", "logic"] },
+        { id: "need-based", label: "더 급한 곳이 먼저!", valueTags: ["empathy", "safety"] },
+        { id: "rotate", label: "돌아가면서 쓰는 게 낫지 않아?", valueTags: ["community", "fairness"] },
+      ],
+      turn3: [
+        { id: "process-matters", label: "과정이 중요한 거구나", valueTags: ["fairness", "community"] },
+        { id: "no-perfect", label: "완벽한 답은 없는 거네", valueTags: ["logic", "empathy"] },
+        { id: "listen-first", label: "일단 들어보는 게 먼저구나", valueTags: ["empathy", "community"] },
       ],
     },
   },
-
-  // DD2: mission-animal-rescue → 유니세프 캠페인
+  // ─── 2. 동물구조센터 → 수진 (유니세프 한국위원회) ───
   {
     missionId: "mission-animal-rescue",
-    title: "실제 NGO의 관심 끌기 전략",
-    realWorldCase: {
-      headline: "유니세프의 '좋아요 말고 백신을' 캠페인",
-      context: "유니세프 스웨덴 지부가 SNS에서 '좋아요'만 누르고 후원하지 않는 사람들을 향해 도발적인 캠페인을 만들었어. '좋아요가 생명을 구하지 않습니다'라는 메시지로 전 세계적인 반향을 일으켰어. 이 캠페인 후 실제 후원금이 크게 늘었어.",
-      keyQuestion: "어제 네가 동물구조센터에서 선택한 접근 방식과 비교하면 어떤 차이가 있어?",
-      source: "UNICEF Sweden, 2013",
+    expert: {
+      name: "수진",
+      role: "NGO 캠페인 기획자",
+      organization: "유니세프 한국위원회",
+      personality: "따뜻하고 감성적이면서도 전략적. '음... 그거 되게 좋은 생각인데?' 하면서 진심으로 칭찬함. 이모티콘을 말로 표현하는 스타일 ㅎㅎ",
+      connectionToMission: "동물구조센터 브랜딩처럼, 사람들의 마음을 움직이는 캠페인을 만드는 게 내 일이야.",
+      personalAnecdote: "아프리카 식수 캠페인에서 '물 한 모금의 무게' 포스터를 만들었는데, SNS에서 100만 뷰를 넘겼어. 비결은 '귀여움'이 아니라 '진짜 이야기'였어.",
     },
-    stepTemplates: {
-      caseIntro: "어제 동물구조센터에서 사람들의 관심을 끄는 방법을 고민했잖아? 실제로 비영리단체들은 이 문제를 매일 고민하고 있어.",
-      questions: [
-        {
-          prompt: "유니세프 캠페인이 성공한 이유는 뭘까?",
-          options: [
-            { id: "q1-shock", label: "사람들을 놀라게 했으니까" },
-            { id: "q1-guilty", label: "양심을 자극했으니까" },
-            { id: "q1-honest", label: "솔직한 메시지였으니까" },
-            { id: "q1-simple", label: "한 문장으로 핵심을 찔렀으니까" },
-          ],
-        },
-        {
-          prompt: "귀여운 동물 사진으로 관심을 끄는 것과, 도발적인 메시지로 끄는 것. 어떤 게 더 효과적일까?",
-          options: [
-            { id: "q2-cute", label: "귀여운 사진이 더 많은 사람을 끌어" },
-            { id: "q2-provoke", label: "도발적인 메시지가 더 오래 기억에 남아" },
-            { id: "q2-both", label: "상황에 따라 다를 것 같아" },
-            { id: "q2-neither", label: "진짜 이야기를 들려주는 게 제일 나아" },
-          ],
-        },
+    realWorldCase: {
+      headline: "'물 한 모금의 무게' 캠페인이 100만 뷰를 넘기까지",
+      context: "유니세프 한국위원회의 식수 캠페인은 처음에 아이들의 귀여운 사진을 썼지만 반응이 없었어요. 전략을 바꿔서 현지 아이가 직접 찍은 짧은 영상을 올렸더니 폭발적으로 퍼졌어요.",
+      keyQuestion: "사람들의 마음을 진짜로 움직이는 건 무엇일까?",
+      source: "유니세프 한국위원회 연례보고서 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 동물구조센터 포스터 결정에 대한 공감. '어떤 방향으로 갔어? 나도 매번 고민이야 ㅎㅎ'" },
+      case: { angle: "캠페인 전략 실패 → 성공 전환 에피소드", personalStory: "첫 번째 포스터가 완전 망해서 회의실에서 울 뻔한 이야기" },
+      question: { theme: "메시지 전달의 진정성", bridgeToMission: "동물구조센터 포스터에서 고민한 것처럼, 진짜 효과적인 메시지는 뭘까" },
+      insight: { coreMessage: "가장 강력한 메시지는 만드는 게 아니라 발견하는 거야. 현장에 답이 있어." },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "wow", label: "100만 뷰? 어떻게요?!" },
+        { id: "relate", label: "저도 비슷하게 고민했어요" },
+        { id: "curious", label: "어떤 캠페인이었어요?" },
       ],
-      opinionTemplate: "사람들의 관심을 끌 때 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "진짜 문제를 솔직하게 보여주는 것",
-        "감정을 움직이는 이미지를 쓰는 것",
-        "한 문장으로 핵심을 전달하는 것",
-        "행동으로 연결되는 메시지를 만드는 것",
+      turn1: [
+        { id: "emotion-wins", label: "감정이 이기는 거구나!", valueTags: ["emotion", "empathy"] },
+        { id: "real-story", label: "진짜 이야기가 힘이 있네", valueTags: ["logic", "community"] },
+        { id: "surprise-element", label: "예상 못한 게 사람을 멈추게 하나봐", valueTags: ["creativity", "adventure"] },
+      ],
+      turn3: [
+        { id: "authenticity", label: "진짜여야 통하는 거구나", valueTags: ["empathy", "community"] },
+        { id: "perspective", label: "받는 사람 입장에서 봐야 하는구나", valueTags: ["empathy", "logic"] },
+        { id: "try-fail", label: "실패해봐야 알 수 있는 거네", valueTags: ["adventure", "creativity"] },
       ],
     },
   },
-
-  // DD3: mission-fairness → 핀란드 급식
+  // ─── 3. 급식 공정성 → 하나 (학교 영양사) ───
   {
     missionId: "mission-fairness",
-    title: "모든 학생에게 같은 급식을?",
-    realWorldCase: {
-      headline: "핀란드의 무료 학교 급식 시스템",
-      context: "핀란드에서는 모든 학생에게 무료 급식을 제공해. 메뉴 선택권이 없는 대신 모두가 똑같이 먹어. 한국에서는 선택급식이 늘고 있지만, 인기 메뉴는 항상 부족하고 불만이 나와.",
-      keyQuestion: "모두에게 똑같이 주는 것과, 선택할 수 있게 하는 것. 어느 쪽이 더 공정할까?",
-      source: "Finnish National Agency for Education",
+    expert: {
+      name: "하나",
+      role: "학교 영양사",
+      organization: "서울시교육청",
+      personality: "편안하고 현실적인 언니 같은 느낌. '아 그거 맞아 맞아~' '근데 진짜 문제는 말이야...' 하면서 이야기 나누는 스타일. 급식실 에피소드를 재밌게 들려줌.",
+      connectionToMission: "급식 배분의 공정성 문제를 매일 현장에서 다루고 있어. 누구에게 먼저 줄지, 양을 어떻게 할지.",
+      personalAnecdote: "알레르기가 있는 학생 때문에 특별식을 만들었는데, 다른 학생들이 '불공평하다'고 항의한 적이 있어. 공정하다는 게 같은 걸 주는 게 아니라는 걸 그때 배웠어.",
     },
-    stepTemplates: {
-      caseIntro: "어제 급식실에서 '공정한 나눔'을 고민했잖아? 실제로 여러 나라에서 이 문제를 다르게 풀고 있어.",
-      questions: [
-        {
-          prompt: "핀란드식(모두 같은 급식)과 한국식(선택급식). 각각의 장점은?",
-          options: [
-            { id: "q1-equal", label: "같은 급식은 비교할 필요가 없어서 편해" },
-            { id: "q1-choice", label: "선택급식은 내가 원하는 걸 먹을 수 있어" },
-            { id: "q1-fair", label: "같은 급식이 더 공평한 것 같아" },
-            { id: "q1-happy", label: "선택할 수 있으면 더 행복해" },
-          ],
-        },
-        {
-          prompt: "만약 네 학교에서 새 급식 방식을 정한다면?",
-          options: [
-            { id: "q2-same", label: "모두 같은 걸 먹자" },
-            { id: "q2-choose", label: "각자 고르게 하자" },
-            { id: "q2-mix", label: "기본 메뉴 + 추가 선택" },
-            { id: "q2-vote", label: "학생 투표로 정하자" },
-          ],
-        },
+    realWorldCase: {
+      headline: "알레르기 특별식 논쟁: 같은 걸 주는 게 공정할까?",
+      context: "서울의 한 초등학교에서 심한 알레르기가 있는 학생을 위해 매일 특별식을 만들었어요. 그런데 다른 학생들이 '왜 걔만 다른 걸 먹어?'라고 불만을 제기했어요.",
+      keyQuestion: "모두에게 같은 걸 주는 것과 각자 필요한 걸 주는 것, 어느 쪽이 진짜 공정할까?",
+      source: "서울시교육청 영양교사 사례집 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 미션에서의 공정성 고민에 공감. '공정하다는 게 뭔지, 나도 매일 고민해 ㅎㅎ'" },
+      case: { angle: "알레르기 특별식을 둘러싼 학생들의 반응", personalStory: "급식실에서 학생이 울면서 '왜 나만 이거야'라고 했을 때의 경험" },
+      question: { theme: "평등 vs 형평성", bridgeToMission: "미션에서 고민한 공정한 배분이 현실에서는 이렇게 나타나" },
+      insight: { coreMessage: "공정함은 하나의 답이 아니라 계속 질문하는 과정이야" },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "oh-no", label: "그 학생 진짜 속상했겠다..." },
+        { id: "both-right", label: "둘 다 맞는 말인데..." },
+        { id: "hard-job", label: "영양사 선생님도 힘들겠다" },
       ],
-      opinionTemplate: "공정한 나눔에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "모두가 똑같이 받는 것",
-        "각자 필요한 만큼 받는 것",
-        "스스로 선택할 수 있는 것",
-        "과정이 투명한 것",
+      turn1: [
+        { id: "same-for-all", label: "같은 걸 주는 게 맞지!", valueTags: ["fairness", "logic"] },
+        { id: "different-needs", label: "필요한 게 다르니까 다르게!", valueTags: ["empathy", "fairness"] },
+        { id: "explain-why", label: "이유를 설명하면 되지 않을까?", valueTags: ["community", "logic"] },
+      ],
+      turn3: [
+        { id: "equity-insight", label: "평등이랑 형평성은 다른 거구나", valueTags: ["fairness", "logic"] },
+        { id: "context-matters", label: "상황에 따라 다를 수 있네", valueTags: ["empathy", "logic"] },
+        { id: "ask-involved", label: "당사자한테 물어봐야 하는 거구나", valueTags: ["empathy", "community"] },
       ],
     },
   },
-
-  // DD4: mission-three-perspectives → 학교 상담실
+  // ─── 4. 세 관점 미션 → 지우 (Wee 센터 상담교사) ───
   {
     missionId: "mission-three-perspectives",
-    title: "실제 학교 상담실에서 일어나는 일",
-    realWorldCase: {
-      headline: "서울 중학교 Wee 클래스 상담 이야기",
-      context: "서울의 한 중학교 상담실에는 한 달에 평균 47건의 상담 요청이 들어와. 가장 많은 이유는 '친구 관계'야. 하지만 상담 선생님은 이야기를 들어보면, 겉으로 보이는 것과 속사정이 항상 달라.",
-      keyQuestion: "같은 상황이라도 사람마다 느끼는 게 다르다는 걸, 어제 경험으로 어떻게 느꼈어?",
-      source: "서울시교육청 Wee 프로젝트 현황, 2023",
+    expert: {
+      name: "지우",
+      role: "학교 상담 교사",
+      organization: "서울 Wee 센터",
+      personality: "조용하지만 따뜻한 느낌. 잘 들어주고 '그랬구나...' 하면서 공감을 먼저 함. 질문을 잘 던지는 스타일. '그때 기분이 어땠어?'",
+      connectionToMission: "여러 관점에서 상황을 봐야 하는 건 상담에서도 매일 하는 일이야. 가해자, 피해자, 방관자 모두의 이야기를 들어.",
+      personalAnecdote: "학교폭력 사건에서 가해 학생을 상담했는데, 그 학생도 집에서 힘든 일이 있었어. 나쁜 행동에는 이유가 있더라고.",
     },
-    stepTemplates: {
-      caseIntro: "어제 교실에서 세 사람의 시선으로 같은 장면을 봤잖아? 실제 학교에서도 매일 이런 일이 일어나고 있어.",
-      questions: [
-        {
-          prompt: "상담 선생님이 '겉으로 보이는 것과 속사정이 다르다'고 했어. 왜 그럴까?",
-          options: [
-            { id: "q1-hide", label: "사람들은 속마음을 잘 안 보여주니까" },
-            { id: "q1-different", label: "같은 일도 사람마다 다르게 느끼니까" },
-            { id: "q1-complex", label: "문제가 보이는 것보다 복잡하니까" },
-            { id: "q1-afraid", label: "진짜 이유를 말하기 무서우니까" },
-          ],
-        },
-        {
-          prompt: "친구가 기분이 안 좋아 보일 때, 가장 먼저 할 수 있는 건?",
-          options: [
-            { id: "q2-ask", label: "괜찮냐고 물어보기" },
-            { id: "q2-wait", label: "말할 때까지 옆에 있어주기" },
-            { id: "q2-space", label: "혼자 있고 싶을 수 있으니 기다리기" },
-            { id: "q2-share", label: "내 이야기를 먼저 해서 편하게 해주기" },
-          ],
-        },
+    realWorldCase: {
+      headline: "세 명의 이야기: 같은 사건, 세 개의 진실",
+      context: "한 중학교에서 따돌림 사건이 발생했어요. Wee 센터에서 피해 학생, 가해 학생, 방관 학생 모두를 만나 이야기를 들었는데, 세 명이 말하는 '사실'이 완전히 달랐어요.",
+      keyQuestion: "같은 사건을 다르게 기억하는 사람들의 이야기를 어떻게 이해할 수 있을까?",
+      source: "교육부 Wee 센터 상담 사례집 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 여러 관점에서 보는 것의 중요성에 공감. '미션에서 관점 전환 해봤지? 실제로도 그게 정말 중요해'" },
+      case: { angle: "따돌림 사건에서 세 학생의 완전히 다른 진술", personalStory: "가해 학생의 눈물을 처음 본 순간" },
+      question: { theme: "관점 차이와 공감", bridgeToMission: "미션에서 여러 입장을 봤던 것처럼, 현실에서도 한쪽만 들으면 절대 전체 그림이 안 보여" },
+      insight: { coreMessage: "모든 사람에게는 그렇게 행동한 이유가 있어. 이해한다는 건 동의한다는 뜻이 아니야." },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "sad", label: "그 학생들 다 힘들었겠다..." },
+        { id: "interesting", label: "같은 사건인데 다르게 기억해요?" },
+        { id: "hard-to-judge", label: "누가 맞는지 판단하기 어렵네" },
       ],
-      opinionTemplate: "다른 사람을 이해하려면 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "먼저 들어보는 것",
-        "내 기준으로 판단하지 않는 것",
-        "그 사람 입장에서 생각해보는 것",
-        "겉모습만으로 결론 내리지 않는 것",
+      turn1: [
+        { id: "victim-first", label: "피해자 이야기가 가장 중요하지!", valueTags: ["empathy", "safety"] },
+        { id: "all-sides", label: "모두 들어봐야 해", valueTags: ["fairness", "logic"] },
+        { id: "why-bully", label: "가해자도 이유가 있었을까?", valueTags: ["empathy", "logic"] },
+      ],
+      turn3: [
+        { id: "understand-not-agree", label: "이해해도 동의는 아닌 거구나", valueTags: ["logic", "empathy"] },
+        { id: "everyone-has-story", label: "모든 사람에겐 이유가 있구나", valueTags: ["empathy", "community"] },
+        { id: "listen-more", label: "더 들어야 보이는 게 있네", valueTags: ["empathy", "fairness"] },
       ],
     },
   },
-
-  // DD5: mission-hidden-design → 지하철 스크린도어
+  // ─── 5. 숨은 디자인 → 도윤 (서울교통공사 UX) ───
   {
     missionId: "mission-hidden-design",
-    title: "디자인이 사람을 바꾼 순간",
-    realWorldCase: {
-      headline: "서울 지하철 스크린도어, 사고 97% 감소",
-      context: "서울 지하철에 스크린도어가 설치된 후 선로 추락 사고가 97% 줄었어. '조심하세요'라고 말한 게 아니라, 환경 자체를 바꿔서 행동을 바꾼 거야. 이런 걸 '넛지 디자인'이라고 해.",
-      keyQuestion: "'말'로 바꾸는 것과 '디자인'으로 바꾸는 것, 어느 쪽이 더 효과적일까?",
-      source: "서울교통공사, 2023",
+    expert: {
+      name: "도윤",
+      role: "UX 디자이너",
+      organization: "서울교통공사",
+      personality: "호기심 넘치고 장난기 있는 형/오빠 느낌. '오 그거 눈치챘어? 대박인데 ㅋㅋ' 하면서 디자인 이야기를 신나게 함. 일상 속 디자인을 발견하는 재미를 전달.",
+      connectionToMission: "숨은 디자인을 발견하는 미션처럼, 나도 매일 사람들이 '안 불편하면 모르는' 디자인을 만들어.",
+      personalAnecdote: "지하철 노선도 색상을 바꾸는 프로젝트를 했는데, 색각이상 분들도 구분할 수 있는 색 조합을 찾느라 6개월이 걸렸어. 대부분 사람들은 바뀐 줄도 모르더라 ㅋㅋ",
     },
-    stepTemplates: {
-      caseIntro: "어제 집에서 숨은 디자인을 찾아봤잖아? 실제로 디자인 하나가 수만 명의 행동을 바꾸기도 해.",
-      questions: [
-        {
-          prompt: "스크린도어가 사고를 97% 줄인 이유는?",
-          options: [
-            { id: "q1-block", label: "물리적으로 위험한 곳에 갈 수 없게 했으니까" },
-            { id: "q1-think", label: "사람들이 위험을 더 잘 인식하게 됐으니까" },
-            { id: "q1-habit", label: "안전한 행동이 자연스럽게 됐으니까" },
-            { id: "q1-care", label: "지하철이 승객을 더 신경 쓴다는 느낌이 들어서" },
-          ],
-        },
-        {
-          prompt: "학교에서 '복도에서 뛰지 마세요' 대신 디자인으로 해결한다면?",
-          options: [
-            { id: "q2-floor", label: "바닥에 걷는 속도 가이드라인 그리기" },
-            { id: "q2-narrow", label: "복도를 좀 더 좁게 만들기" },
-            { id: "q2-art", label: "벽에 천천히 보고 싶은 그림 붙이기" },
-            { id: "q2-plant", label: "화분을 복도에 놓아서 자연스럽게 우회하게 하기" },
-          ],
-        },
+    realWorldCase: {
+      headline: "지하철 노선도의 비밀: 색각이상자를 위한 6개월",
+      context: "서울 지하철 노선도는 9개 호선을 색으로 구분해요. 하지만 인구의 약 5%인 색각이상자에게는 몇몇 호선이 같은 색으로 보여요. 이 문제를 해결하기 위해 노선도를 재설계했어요.",
+      keyQuestion: "모두를 위한 디자인은 어떻게 만들 수 있을까?",
+      source: "서울교통공사 유니버설디자인 리포트 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 숨은 디자인 발견에 대한 리액션. '일상에서 디자인 발견한 거 진짜 좋은 눈이야 ㅋㅋ'" },
+      case: { angle: "노선도 재설계 프로젝트의 구체적 과정", personalStory: "색각이상인 동료와 함께 테스트하면서 '아 이게 이렇게 보이는구나' 충격받은 순간" },
+      question: { theme: "보편적 디자인(유니버설 디자인)", bridgeToMission: "미션에서 숨은 디자인을 찾은 것처럼, 좋은 디자인은 눈에 안 보여도 모두를 위해 작동하고 있어" },
+      insight: { coreMessage: "최고의 디자인은 아무도 불편해하지 않아서 아무도 모르는 디자인이야" },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "cool", label: "지하철 디자인 하는 거 멋있다!" },
+        { id: "never-noticed", label: "그런 거 한 번도 몰랐어요" },
+        { id: "how", label: "어떻게 고쳤어요?" },
       ],
-      opinionTemplate: "사람의 행동을 바꾸려면 가장 효과적인 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "환경을 바꾸는 것",
-        "규칙을 정하는 것",
-        "왜 그래야 하는지 설명하는 것",
-        "좋은 행동을 쉽게 만드는 것",
+      turn1: [
+        { id: "change-color", label: "색 바꾸면 되지 않아?", valueTags: ["efficiency", "logic"] },
+        { id: "add-pattern", label: "패턴이나 숫자를 추가!", valueTags: ["creativity", "empathy"] },
+        { id: "ask-users", label: "그 분들한테 직접 물어봐야지", valueTags: ["empathy", "community"] },
+      ],
+      turn3: [
+        { id: "invisible-design", label: "안 보이는 디자인이 최고구나", valueTags: ["logic", "empathy"] },
+        { id: "test-with-people", label: "쓰는 사람과 같이 만들어야 하는구나", valueTags: ["community", "empathy"] },
+        { id: "small-details", label: "작은 차이가 큰 변화를 만드네", valueTags: ["creativity", "logic"] },
       ],
     },
   },
-
-  // DD6: mission-fun-vs-safety → 에버랜드 T-Express
+  // ─── 6. 재미 vs 안전 → 서현 (에버랜드 안전 엔지니어) ───
   {
     missionId: "mission-fun-vs-safety",
-    title: "실제 놀이공원의 안전 결정",
-    realWorldCase: {
-      headline: "에버랜드 T-Express 안전 점검 운행 중단",
-      context: "에버랜드의 T-Express는 한때 세계에서 가장 가파른 목재 롤러코스터였어. 안전 점검에서 지적사항이 나왔을 때, 한 달간 운행을 중단하고 보수했어. 그 기간 동안 방문객 불만이 쏟아졌지만, 에버랜드는 안전을 선택했어.",
-      keyQuestion: "재미를 포기하고 안전을 선택한 에버랜드의 결정을 어떻게 생각해?",
-      source: "국토교통부 유기시설 안전관리 현황, 2019",
+    expert: {
+      name: "서현",
+      role: "놀이공원 안전 엔지니어",
+      organization: "에버랜드",
+      personality: "쾌활하고 열정적. '아 이거 진짜 재밌는 이야기야!' 하면서 놀이기구 이야기를 흥분해서 함. 안전이라는 주제를 무겁지 않게 전달하는 능력자.",
+      connectionToMission: "재미와 안전 사이에서 고민한 미션처럼, 나도 매일 그 균형을 찾아야 해.",
+      personalAnecdote: "T-익스프레스 점검할 때 밤새 기구에 직접 100번 이상 탔어. 안전한 줄 알아도 직접 타봐야 확신이 생기거든. 그날 밤 토했지만 ㅋㅋ",
     },
-    stepTemplates: {
-      caseIntro: "어제 놀이공원에서 재미와 안전 사이에서 고민했잖아? 실제 놀이공원에서도 이런 선택을 해.",
-      questions: [
-        {
-          prompt: "에버랜드가 한 달이나 운행을 멈춘 건 좋은 결정이었을까?",
-          options: [
-            { id: "q1-right", label: "당연히 맞아, 사고가 나면 더 큰일이니까" },
-            { id: "q1-too-long", label: "맞지만 한 달은 너무 길어" },
-            { id: "q1-both", label: "일부만 운행하면서 수리하면 좋았을 텐데" },
-            { id: "q1-hard", label: "어려운 결정이지만 안전이 먼저야" },
-          ],
-        },
-        {
-          prompt: "놀이기구 설계자가 된다면, 재미와 안전 중 어디에 더 신경 쓸 거야?",
-          options: [
-            { id: "q2-safety", label: "안전 60%, 재미 40%" },
-            { id: "q2-fun", label: "재미 60%, 안전 40%" },
-            { id: "q2-equal", label: "정확히 반반" },
-            { id: "q2-creative", label: "안전한데 재미있는 새로운 방법을 찾을 거야" },
-          ],
-        },
+    realWorldCase: {
+      headline: "T-익스프레스의 비밀: 100번 타본 엔지니어",
+      context: "한국에서 가장 빠른 목재 롤러코스터 T-익스프레스는 개장 전 안전팀이 수백 번 시험 탑승을 했어요. 스릴을 유지하면서도 안전 기준을 통과하기 위해 각도를 0.5도씩 조정하는 작업을 반복했어요.",
+      keyQuestion: "재미를 줄이지 않으면서 안전을 지킬 수 있을까?",
+      source: "에버랜드 안전관리보고서 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 놀이공원 설계 미션에서의 안전-재미 고민 공감. '그 딜레마 진짜 어렵지? 나도 매일 그걸 고민해 ㅋㅋ'" },
+      case: { angle: "T-익스프레스 각도 조정 에피소드", personalStory: "0.5도 바꿨더니 스릴은 그대로인데 안전 점수가 확 올라간 순간" },
+      question: { theme: "안전과 즐거움의 균형", bridgeToMission: "미션에서 안전이냐 재미냐 골랐듯이, 현실에서는 둘 다 잡을 방법을 찾아야 해" },
+      insight: { coreMessage: "안전과 재미는 반대가 아니야. 안전하니까 더 마음껏 즐길 수 있는 거야." },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "awesome", label: "100번 탔어요?! 대박 ㅋㅋ" },
+        { id: "scary", label: "무섭지 않았어요?" },
+        { id: "jealous", label: "부럽다... 저도 타보고 싶어" },
       ],
-      opinionTemplate: "재미와 안전 사이에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "안전이 보장되어야 진짜 재미가 있다는 것",
-        "위험을 완전히 없앨 수는 없다는 것",
-        "재미를 포기하지 않으면서 안전할 수 있다는 것",
-        "결정하는 사람이 책임져야 한다는 것",
+      turn1: [
+        { id: "safety-always", label: "안전이 무조건 1순위!", valueTags: ["safety", "logic"] },
+        { id: "both-possible", label: "둘 다 잡을 수 있지 않을까?", valueTags: ["creativity", "efficiency"] },
+        { id: "ask-riders", label: "타는 사람한테 물어보면?", valueTags: ["community", "empathy"] },
+      ],
+      turn3: [
+        { id: "not-opposite", label: "안전이랑 재미는 반대가 아니구나", valueTags: ["logic", "creativity"] },
+        { id: "small-change-big", label: "0.5도 차이가 이렇게 크다니", valueTags: ["logic", "efficiency"] },
+        { id: "trust-safety", label: "안전해야 더 재밌는 거구나", valueTags: ["safety", "adventure"] },
       ],
     },
   },
-
-  // DD7: mission-one-line → 나이키 Just Do It
+  // ─── 7. 한 줄 미션 → 태민 (제일기획 카피라이터) ───
   {
     missionId: "mission-one-line",
-    title: "한 줄이 세상을 바꾼 순간",
-    realWorldCase: {
-      headline: "나이키 'Just Do It' 탄생 비화",
-      context: "1988년, 광고인 댄 위든은 사형수의 마지막 말 'Let's do it'에서 영감을 받아 'Just Do It'을 만들었어. 이 세 단어가 운동화 회사를 세계 최대 스포츠 브랜드로 만들었어. 한 줄의 말이 수십억 달러의 가치를 만든 거야.",
-      keyQuestion: "왜 이 세 단어가 그렇게 강력했을까?",
-      source: "Wieden+Kennedy",
+    expert: {
+      name: "태민",
+      role: "카피라이터",
+      organization: "제일기획",
+      personality: "유머러스하고 말장난을 좋아하는 스타일. '오 그 표현 센스 있는데? ㅋㅋ' 하면서 언어에 대한 열정이 넘침. 일상의 말에서 영감을 찾는 이야기를 잘함.",
+      connectionToMission: "한 줄로 마음을 움직이는 미션처럼, 나도 매일 한 줄짜리 카피를 쓰느라 밤을 새.",
+      personalAnecdote: "삼성 갤럭시 광고 카피를 쓸 때 300개를 쓰고 결국 채택된 건 집에 가다가 버스에서 떠오른 한 줄이었어. 그날 제일 아무 생각 없을 때 나온 거 ㅋㅋ",
     },
-    stepTemplates: {
-      caseIntro: "어제 광고 회사에서 한 줄로 사람을 설득하는 연습을 했잖아? 실제로 역사를 바꾼 한 줄들이 있어.",
-      questions: [
-        {
-          prompt: "'Just Do It'이 성공한 가장 큰 이유는?",
-          options: [
-            { id: "q1-short", label: "짧아서 기억하기 쉬우니까" },
-            { id: "q1-feeling", label: "듣는 사람의 감정을 움직이니까" },
-            { id: "q1-anyone", label: "누구에게나 적용되니까" },
-            { id: "q1-action", label: "행동하게 만드니까" },
-          ],
-        },
-        {
-          prompt: "네가 한 줄로 세상을 바꿀 수 있다면, 어떤 메시지를 전할 거야?",
-          options: [],
-          followUpPrompt: "네만의 한 줄을 적어봐",
-        },
+    realWorldCase: {
+      headline: "300개를 쓰고 버스에서 떠오른 한 줄",
+      context: "광고 카피라이터는 하나의 문장을 위해 수백 개의 시안을 쓰고 버려요. 제일기획의 카피라이터 팀은 대형 캠페인 하나에 평균 200~500개의 카피를 검토한다고 해요.",
+      keyQuestion: "왜 어떤 한 줄은 사람의 마음에 꽂히고, 어떤 한 줄은 스쳐 지나갈까?",
+      source: "제일기획 크리에이티브 리뷰 2024",
+    },
+    turnTemplates: {
+      arrival: { hint: "자기소개 + 한 줄 표현 미션에 대한 공감. '한 줄 쓰는 거 진짜 어렵지? ㅋㅋ 나도 매일 고통받아'" },
+      case: { angle: "300개 카피를 쓰고 버린 과정", personalStory: "밤새 쓴 카피가 다 탈락하고, 버스에서 멍 때리다가 떠오른 순간" },
+      question: { theme: "표현의 힘과 과정", bridgeToMission: "미션에서 한 줄을 고민한 것처럼, 프로도 수백 번 시도하고 버려" },
+      insight: { coreMessage: "좋은 한 줄은 재능이 아니라 수백 번의 시도와 관찰에서 나와" },
+    },
+    interactionOptions: {
+      turn0: [
+        { id: "no-way", label: "300개요?! 미쳤다 ㅋㅋ" },
+        { id: "relate-hard", label: "저도 한 줄 쓰는 거 진짜 어려웠어요" },
+        { id: "want-to-know", label: "어떤 카피가 뽑혔어요?" },
       ],
-      opinionTemplate: "사람의 마음을 움직이는 말에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-      opinionScaffolds: [
-        "짧고 강렬한 것",
-        "듣는 사람이 자기 이야기라고 느끼게 하는 것",
-        "행동으로 이어지게 하는 것",
-        "진심이 담겨 있는 것",
+      turn1: [
+        { id: "feeling-words", label: "마음이 담긴 말이 힘 있지!", valueTags: ["emotion", "empathy"] },
+        { id: "short-strong", label: "짧을수록 강한 것 같아", valueTags: ["efficiency", "logic"] },
+        { id: "unexpected", label: "예상 못한 말이 기억에 남지!", valueTags: ["creativity", "adventure"] },
+      ],
+      turn3: [
+        { id: "effort-behind", label: "쉬워 보여도 엄청 노력한 거구나", valueTags: ["logic", "efficiency"] },
+        { id: "observe-life", label: "일상을 관찰하는 게 중요하네", valueTags: ["creativity", "empathy"] },
+        { id: "fail-to-find", label: "많이 실패해야 좋은 게 나오는구나", valueTags: ["adventure", "creativity"] },
       ],
     },
   },

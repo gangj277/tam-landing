@@ -159,12 +159,14 @@ export const weeklyReports = pgTable("weekly_reports", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// ─── Deep-Dive v2 Tables ───
+
 export const deepDives = pgTable("deep_dives", {
   id: text("id").primaryKey(),
   missionId: text("mission_id").notNull(),
   sessionId: text("session_id"),
   childId: text("child_id").notNull(),
-  title: text("title").notNull(),
+  expert: jsonb("expert").notNull(),
   realWorldCase: jsonb("real_world_case").notNull(),
   portfolioEntry: text("portfolio_entry"),
   status: text("status").notNull(),
@@ -173,14 +175,15 @@ export const deepDives = pgTable("deep_dives", {
   createdAt: text("created_at").notNull(),
 });
 
-export const deepDiveSteps = pgTable("deep_dive_steps", {
+export const deepDiveTurns = pgTable("deep_dive_turns", {
   id: text("id").primaryKey(),
   deepDiveId: text("deep_dive_id").notNull(),
-  stepIndex: integer("step_index").notNull(),
+  turnIndex: integer("turn_index").notNull(),
   type: text("type").notNull(),
-  prompt: text("prompt").notNull(),
-  response: text("response"),
+  expertMessage: text("expert_message"),
+  interactionType: text("interaction_type").notNull(),
   options: jsonb("options"),
   selectedOptionId: text("selected_option_id"),
+  textResponse: text("text_response"),
   createdAt: text("created_at").notNull(),
 });

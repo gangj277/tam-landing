@@ -73,25 +73,6 @@ export interface Mission {
   ageRange: [number, number];
 }
 
-// ─── Deep-Dive Types ───
-
-export type DeepDiveStepType = "case" | "question" | "opinion" | "portfolio";
-
-export interface DeepDiveStepOption {
-  id: string;
-  label: string;
-}
-
-export const DEEP_DIVE_STEP_META: Record<
-  DeepDiveStepType,
-  { label: string; description: string }
-> = {
-  case: { label: "현실 사례", description: "실제 세상에서 일어난 이야기" },
-  question: { label: "핵심 질문", description: "한 걸음 더 깊이 생각해보기" },
-  opinion: { label: "내 의견", description: "내 생각을 정리해보기" },
-  portfolio: { label: "기록", description: "오늘의 탐구를 한 문장으로" },
-};
-
 // ─── Helpers ───
 
 export const CATEGORY_META: Record<

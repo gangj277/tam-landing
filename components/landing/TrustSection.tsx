@@ -11,7 +11,7 @@ const trustCards = [
       </svg>
     ),
     title: "안전한 AI",
-    desc: "아이에게 부적절한 콘텐츠가 생성되지 않도록 다층 안전 필터를 적용합니다. AI는 정답을 주지 않고, 가능성을 열어주는 도구로만 작동합니다.",
+    desc: "다층 안전 필터로 부적절한 콘텐츠를 차단합니다. AI는 답을 주지 않고, 가능성만 열어줍니다.",
   },
   {
     icon: (
@@ -21,7 +21,7 @@ const trustCards = [
       </svg>
     ),
     title: "하루 10분",
-    desc: "한 번의 경험은 10분이면 끝납니다. 끝없이 빠져드는 구조가 아닙니다. 하루 한 번, 짧고 강하게.",
+    desc: "한 번의 경험은 10분이면 끝납니다. 끝없이 빠져드는 디자인이 아닙니다. 짧고 강하게, 매일.",
   },
   {
     icon: (
@@ -32,18 +32,7 @@ const trustCards = [
       </svg>
     ),
     title: "평가하지 않습니다",
-    desc: "점수도, 등급도, 순위도 없습니다. 아이의 선택을 평가하지 않고, 패턴을 비춰줄 뿐입니다. \"넌 이런 아이야\"가 아니라 \"요즘은 이런 쪽을 많이 고르고 있어요.\"",
-  },
-  {
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
-        <rect x="6" y="8" width="20" height="16" rx="3" stroke="#4A5FC1" strokeWidth="1.5" fill="#4A5FC1" fillOpacity="0.06" />
-        <path d="M10 14h6M10 18h8" stroke="#4A5FC1" strokeWidth="1.2" strokeLinecap="round" />
-        <circle cx="22" cy="16" r="2" stroke="#4A5FC1" strokeWidth="1" />
-      </svg>
-    ),
-    title: "부모를 위한 요약",
-    desc: "매주 아이의 경험 요약을 받아보실 수 있습니다. 아이가 어떤 세계에 끌렸는지, 어떤 선택을 했는지, 시험 점수로는 보이지 않는 것들이 보입니다.",
+    desc: "점수, 등급, 순위가 없습니다. 선택을 판단하지 않고, 패턴만 비춰줍니다.",
   },
 ];
 
@@ -76,8 +65,8 @@ export default function TrustSection() {
           </h2>
         </div>
 
-        {/* Trust cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-[880px] mx-auto">
+        {/* Trust cards — 3 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-[960px] mx-auto mb-14">
           {trustCards.map((card, i) => (
             <div
               key={i}
@@ -95,6 +84,32 @@ export default function TrustSection() {
               </p>
             </div>
           ))}
+        </div>
+
+        {/* Founder 1-line */}
+        <div
+          className={`max-w-[640px] mx-auto text-center transition-all duration-700 ${
+            isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          }`}
+          style={{ transitionDelay: "600ms" }}
+        >
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-border-light" />
+            <span className="text-[11px] font-semibold text-text-muted tracking-[0.06em] uppercase">
+              만든 사람
+            </span>
+            <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-border-light" />
+          </div>
+          <p className="text-[15px] leading-[1.7] text-text-secondary">
+            연세대 23학번, B2B AI 소프트웨어 2년 운영, CREAI+IT 창립.
+            <br />
+            <span className="font-medium text-navy">
+              모든 아이가 자기만의 정체성을 발견하고, 그 정체성으로 살아가는 세상을 열고 싶습니다.
+            </span>
+          </p>
+          <p className="text-[13px] text-text-muted mt-2">
+            — 강지민, 탐 TAM 대표
+          </p>
         </div>
       </div>
     </section>

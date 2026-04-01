@@ -13,14 +13,10 @@ import {
   ApiError,
 } from "@/lib/api-client";
 import type {
-  FamilyMe,
   MissionData,
   MissionPreviewData,
   PastSessionItem,
-  ProfileData,
   TodayMissionResponse,
-  TodayActivityResponse,
-  DeepDiveData,
 } from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
 import type { MissionCategory } from "@/lib/types";
@@ -282,48 +278,6 @@ function MarsCitySVG() {
   );
 }
 
-function BookDeepDiveSVG() {
-  return (
-    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
-      <defs>
-        <linearGradient id="bookCover" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#4A5FC1" />
-          <stop offset="100%" stopColor="#7B8FE0" />
-        </linearGradient>
-      </defs>
-      <rect x="6" y="4" width="28" height="32" rx="3" fill="url(#bookCover)" opacity="0.15" stroke="#4A5FC1" strokeWidth="1.2" strokeOpacity="0.5" />
-      <rect x="10" y="4" width="24" height="32" rx="2.5" fill="url(#bookCover)" opacity="0.08" />
-      <line x1="10" y1="4" x2="10" y2="36" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.3" />
-      {/* Page lines */}
-      <line x1="15" y1="12" x2="28" y2="12" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.3" strokeLinecap="round" />
-      <line x1="15" y1="16" x2="26" y2="16" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.25" strokeLinecap="round" />
-      <line x1="15" y1="20" x2="28" y2="20" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.3" strokeLinecap="round" />
-      <line x1="15" y1="24" x2="24" y2="24" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.2" strokeLinecap="round" />
-      {/* Magnifying glass */}
-      <circle cx="28" cy="28" r="5" fill="none" stroke="#E8614D" strokeWidth="1.3" strokeOpacity="0.6" />
-      <line x1="31.5" y1="31.5" x2="35" y2="35" stroke="#E8614D" strokeWidth="1.5" strokeOpacity="0.5" strokeLinecap="round" />
-      <circle cx="28" cy="28" r="2" fill="#E8614D" opacity="0.1" />
-    </svg>
-  );
-}
-
-function LockSVG() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="3" y="9" width="14" height="9" rx="2.5" fill="#E8E6E1" stroke="#D4D0C8" strokeWidth="1" />
-      <path
-        d="M6 9V6.5C6 4.01 8.01 2 10.5 2V2C12.99 2 15 4.01 15 6.5V9"
-        fill="none"
-        stroke="#D4D0C8"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
-      <circle cx="10" cy="13.5" r="1.5" fill="#8A8A9A" />
-      <line x1="10" y1="14.5" x2="10" y2="16" stroke="#8A8A9A" strokeWidth="1.2" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 function CheckSVG({ color }: { color: string }) {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
@@ -376,9 +330,6 @@ export default function HomePage() {
   const [childName, setChildName] = useState("");
   const [streak, setStreak] = useState(0);
   const [todayResponse, setTodayResponse] = useState<TodayMissionResponse | null>(null);
-  const [activityType, setActivityType] = useState<"mission" | "deepdive" | "deepdive_pending">("mission");
-  const [deepDiveData, setDeepDiveData] = useState<DeepDiveData | null>(null);
-  const [linkedMission, setLinkedMission] = useState<MissionData | null>(null);
   const [tomorrowMission, setTomorrowMission] = useState<MissionData | null>(null);
   const [pastSessions, setPastSessions] = useState<PastSessionItem[]>([]);
   const [choosingIndex, setChoosingIndex] = useState<number | null>(null);
@@ -391,50 +342,18 @@ export default function HomePage() {
         const family = await getFamilyMe();
         setChildName(family.activeChild.name);
 
-        // Try getTodayActivity first; fall back to getTodayMission on failure
-        let activityRes: TodayActivityResponse | null = null;
-        try {
-          activityRes = await getTodayActivity();
-        } catch {
-          // fallback — wrap legacy response
-          activityRes = null;
-        }
-
-        const [sessionsRes, profileRes, tomorrowRes] = await Promise.all([
+        const [todayRes, sessionsRes, profileRes, tomorrowRes] = await Promise.all([
+          fetchTodayMission(),
           listSessions(6),
           getProfile(family.activeChildId),
           fetchTomorrowMission().catch(() => null),
         ]);
 
+        setTodayResponse(todayRes);
         setPastSessions(sessionsRes.sessions);
         setStreak(profileRes.profile.stats.currentStreak);
         if (tomorrowRes) {
           setTomorrowMission(tomorrowRes.mission);
-        }
-
-        if (activityRes) {
-          if (activityRes.type === "deepdive") {
-            setActivityType("deepdive");
-            setDeepDiveData(activityRes.deepDive);
-            setLinkedMission(activityRes.linkedMission);
-          } else if (activityRes.type === "deepdive_pending") {
-            setActivityType("deepdive_pending");
-            setLinkedMission(activityRes.linkedMission);
-          } else {
-            // type === "mission" — convert to legacy TodayMissionResponse shape
-            setActivityType("mission");
-            if ("status" in activityRes) {
-              setTodayResponse(activityRes as TodayMissionResponse);
-            } else {
-              // Simple mission shape without status field
-              setTodayResponse({ status: "sequence", mission: activityRes.mission, reason: activityRes.reason ?? "" });
-            }
-          }
-        } else {
-          // Fallback: use legacy endpoint directly
-          setActivityType("mission");
-          const todayRes = await fetchTodayMission();
-          setTodayResponse(todayRes);
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
@@ -481,7 +400,7 @@ export default function HomePage() {
     );
   }
 
-  if (activityType === "mission" && !todayResponse) {
+  if (!todayResponse) {
     return (
       <div className="px-5 pt-14 pb-6 flex flex-col items-center justify-center min-h-[60vh]">
         <p className="text-[16px] font-bold text-navy mb-2">오늘의 미션을 준비 중이에요</p>
@@ -535,118 +454,8 @@ export default function HomePage() {
         className={`mb-7 ${mounted ? "animate-fade-in-up delay-200" : "opacity-0"}`}
         style={{ animationFillMode: "both" }}
       >
-        {/* ── Deep-Dive Card ── */}
-        {activityType === "deepdive" && deepDiveData && linkedMission && (
-          <>
-            <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-2.5">
-              오늘의 활동
-            </p>
-
-            <div className="bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border border-border-light overflow-hidden">
-              <div
-                className="h-1.5"
-                style={{
-                  background: "linear-gradient(90deg, #4A5FC1, #7B8FE0aa, #4A5FC144)",
-                }}
-              />
-
-              <div className="px-5 pt-5 pb-5">
-                <div className="mb-4">
-                  <BookDeepDiveSVG />
-                </div>
-
-                <h2 className="text-[20px] font-bold text-navy leading-snug mb-3">
-                  오늘의 딥다이브
-                </h2>
-
-                <p className="text-[12px] text-text-muted mb-2">
-                  어제의 미션: {linkedMission.title}
-                </p>
-
-                <div className="h-px bg-border-light mb-3" />
-
-                <h3 className="text-[17px] font-bold text-navy leading-snug mb-1.5">
-                  {deepDiveData.title}
-                </h3>
-                <p className="text-[14px] font-medium text-text-secondary mb-1">
-                  {deepDiveData.realWorldCase.headline}
-                </p>
-                <p className="text-[13px] text-text-muted leading-relaxed line-clamp-2 italic mb-4">
-                  &ldquo;{deepDiveData.realWorldCase.context}&rdquo;
-                </p>
-
-                <div className="flex items-center gap-2 text-[12px] text-text-muted mb-5">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <circle cx="6" cy="6" r="5" stroke="#8A8A9A" strokeWidth="1" />
-                    <path d="M6 3.5V6.5L8 7.5" stroke="#8A8A9A" strokeWidth="1" strokeLinecap="round" />
-                  </svg>
-                  <span>약 5분</span>
-                  <span className="text-border-light">|</span>
-                  <span>4단계 탐구</span>
-                </div>
-
-                <Link
-                  href={`/deepdive/${deepDiveData.id}`}
-                  className="block w-full bg-coral text-white font-bold text-[15px] py-3.5 rounded-xl text-center active:bg-coral-hover transition-colors"
-                >
-                  탐구 시작하기
-                </Link>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── Deep-Dive Pending Card ── */}
-        {activityType === "deepdive_pending" && linkedMission && (
-          <>
-            <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-2.5">
-              오늘의 활동
-            </p>
-
-            <div className="bg-card-bg rounded-2xl shadow-lg shadow-black/[0.06] border border-border-light overflow-hidden">
-              <div
-                className="h-1.5"
-                style={{
-                  background: "linear-gradient(90deg, #4A5FC1, #7B8FE0aa, #4A5FC144)",
-                }}
-              />
-
-              <div className="px-5 pt-5 pb-5">
-                <div className="mb-4">
-                  <BookDeepDiveSVG />
-                </div>
-
-                <h2 className="text-[20px] font-bold text-navy leading-snug mb-3">
-                  오늘의 딥다이브
-                </h2>
-
-                <p className="text-[14px] text-text-secondary leading-relaxed mb-1">
-                  어제의 미션을 먼저 완료하면
-                </p>
-                <p className="text-[14px] text-text-secondary leading-relaxed mb-4">
-                  현실 사례 탐구를 할 수 있어!
-                </p>
-
-                <p className="text-[15px] font-bold text-navy mb-5">
-                  {linkedMission.title}
-                </p>
-
-                <Link
-                  href={`/mission/${linkedMission.id}`}
-                  className="block w-full text-center font-bold text-[15px] py-3.5 rounded-xl border-2 border-border-light text-text-secondary active:bg-bg-warm transition-colors"
-                >
-                  어제의 미션 하러 가기
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" className="inline-block ml-1.5 -mt-0.5">
-                    <path d="M5 3L9 7L5 11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </Link>
-              </div>
-            </div>
-          </>
-        )}
-
-        {/* ── Mission Cards (existing logic) ── */}
-        {activityType === "mission" && todayResponse && (
+        {/* ── Mission Cards ── */}
+        {todayResponse && (
           <>
             {todayResponse.status === "choosing" ? (
               <>
@@ -868,7 +677,11 @@ export default function HomePage() {
         <div className="relative bg-bg-warm rounded-2xl px-5 py-4 border border-border-light overflow-hidden">
           <div className="absolute inset-0 bg-bg-warm/60 backdrop-blur-sm z-10 flex items-center justify-center">
             <div className="flex items-center gap-2 bg-card-bg/80 rounded-xl px-4 py-2.5 shadow-sm border border-border-light">
-              <LockSVG />
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect x="3" y="9" width="14" height="9" rx="2.5" fill="#E8E6E1" stroke="#D4D0C8" strokeWidth="1" />
+                <path d="M6 9V6.5C6 4.01 8.01 2 10.5 2V2C12.99 2 15 4.01 15 6.5V9" fill="none" stroke="#D4D0C8" strokeWidth="1.5" strokeLinecap="round" />
+                <circle cx="10" cy="13.5" r="1.5" fill="#8A8A9A" />
+              </svg>
               <span className="text-[13px] font-semibold text-text-muted">
                 내일도 새로운 세계가 기다리고 있어
               </span>

@@ -4,6 +4,8 @@ import { seededMissions } from "@/lib/server/constants";
 import { createDb } from "@/lib/server/db/client";
 import {
   children,
+  deepDives,
+  deepDiveTurns,
   families,
   familyDevices,
   missionAssignments,
@@ -18,14 +20,15 @@ import {
   sessionToolUsages,
   weeklyReports,
   dailyChoiceSets,
-  deepDives as deepDivesTable,
-  deepDiveSteps as deepDiveStepsTable,
 } from "@/lib/server/db/schema";
 import type {
   ChildProfile,
   DailyChoiceSet,
   DeepDive,
-  DeepDiveStep,
+  DeepDiveTurn,
+  DeepDiveTurnOption,
+  ExpertPersona,
+  DeepDiveRealWorldCase,
   ExpansionToolType,
   GeneratedEpilogue,
   GeneratedScenarioRound,
@@ -415,59 +418,85 @@ export function createPostgresStore(): Store {
         },
       });
     },
-    // Deep-dive (postgres)
+    // Deep-dive v2
     async getDeepDive(deepDiveId) {
       const row = await db.query.deepDives.findFirst({
-        where: eq(deepDivesTable.id, deepDiveId),
+        where: eq(deepDives.id, deepDiveId),
       });
       if (!row) return null;
-      const steps = await db.select().from(deepDiveStepsTable).where(eq(deepDiveStepsTable.deepDiveId, deepDiveId));
+      const turnRows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, deepDiveId));
+      const turns: DeepDiveTurn[] = turnRows
+        .map((t) => ({
+          id: t.id,
+          deepDiveId: t.deepDiveId,
+          turnIndex: t.turnIndex,
+          type: t.type as DeepDiveTurn["type"],
+          expertMessage: t.expertMessage,
+          interactionType: t.interactionType as DeepDiveTurn["interactionType"],
+          options: t.options as DeepDiveTurnOption[] | undefined,
+          selectedOptionId: t.selectedOptionId ?? undefined,
+          textResponse: t.textResponse ?? undefined,
+          createdAt: t.createdAt,
+        }))
+        .sort((a, b) => a.turnIndex - b.turnIndex);
       return {
-        ...row,
-        realWorldCase: row.realWorldCase as DeepDive["realWorldCase"],
-        steps: steps
-          .map((s) => ({ ...s, options: s.options as DeepDiveStep["options"] }))
-          .sort((a, b) => a.stepIndex - b.stepIndex),
-      } as DeepDive;
-    },
-    async getDeepDiveByChildAndMission(childId, missionId) {
-      const row = await db.query.deepDives.findFirst({
-        where: and(
-          eq(deepDivesTable.childId, childId),
-          eq(deepDivesTable.missionId, missionId),
-          eq(deepDivesTable.status, "active"),
-        ),
-      });
-      if (!row) return null;
-      const steps = await db.select().from(deepDiveStepsTable).where(eq(deepDiveStepsTable.deepDiveId, row.id));
-      return {
-        ...row,
-        realWorldCase: row.realWorldCase as DeepDive["realWorldCase"],
-        steps: steps
-          .map((s) => ({ ...s, options: s.options as DeepDiveStep["options"] }))
-          .sort((a, b) => a.stepIndex - b.stepIndex),
-      } as DeepDive;
+        id: row.id,
+        missionId: row.missionId,
+        sessionId: row.sessionId,
+        childId: row.childId,
+        expert: row.expert as ExpertPersona,
+        realWorldCase: row.realWorldCase as DeepDiveRealWorldCase,
+        turns,
+        portfolioEntry: row.portfolioEntry,
+        status: row.status as DeepDive["status"],
+        startedAt: row.startedAt,
+        completedAt: row.completedAt,
+        createdAt: row.createdAt,
+      };
     },
     async listDeepDivesByChild(childId) {
-      const rows = await db.select().from(deepDivesTable).where(eq(deepDivesTable.childId, childId));
-      const allSteps = await Promise.all(
-        rows.map((r) => db.select().from(deepDiveStepsTable).where(eq(deepDiveStepsTable.deepDiveId, r.id))),
-      );
-      return rows.map((row, i) => ({
-        ...row,
-        realWorldCase: row.realWorldCase as DeepDive["realWorldCase"],
-        steps: allSteps[i]
-          .map((s) => ({ ...s, options: s.options as DeepDiveStep["options"] }))
-          .sort((a, b) => a.stepIndex - b.stepIndex),
-      })) as DeepDive[];
+      const rows = await db.select().from(deepDives).where(eq(deepDives.childId, childId));
+      const result: DeepDive[] = [];
+      for (const row of rows) {
+        const turnRows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, row.id));
+        const turns: DeepDiveTurn[] = turnRows
+          .map((t) => ({
+            id: t.id,
+            deepDiveId: t.deepDiveId,
+            turnIndex: t.turnIndex,
+            type: t.type as DeepDiveTurn["type"],
+            expertMessage: t.expertMessage,
+            interactionType: t.interactionType as DeepDiveTurn["interactionType"],
+            options: t.options as DeepDiveTurnOption[] | undefined,
+            selectedOptionId: t.selectedOptionId ?? undefined,
+            textResponse: t.textResponse ?? undefined,
+            createdAt: t.createdAt,
+          }))
+          .sort((a, b) => a.turnIndex - b.turnIndex);
+        result.push({
+          id: row.id,
+          missionId: row.missionId,
+          sessionId: row.sessionId,
+          childId: row.childId,
+          expert: row.expert as ExpertPersona,
+          realWorldCase: row.realWorldCase as DeepDiveRealWorldCase,
+          turns,
+          portfolioEntry: row.portfolioEntry,
+          status: row.status as DeepDive["status"],
+          startedAt: row.startedAt,
+          completedAt: row.completedAt,
+          createdAt: row.createdAt,
+        });
+      }
+      return result;
     },
     async upsertDeepDive(deepDive) {
-      await db.insert(deepDivesTable).values({
+      await db.insert(deepDives).values({
         id: deepDive.id,
         missionId: deepDive.missionId,
         sessionId: deepDive.sessionId,
         childId: deepDive.childId,
-        title: deepDive.title,
+        expert: deepDive.expert,
         realWorldCase: deepDive.realWorldCase,
         portfolioEntry: deepDive.portfolioEntry,
         status: deepDive.status,
@@ -475,7 +504,7 @@ export function createPostgresStore(): Store {
         completedAt: deepDive.completedAt,
         createdAt: deepDive.createdAt,
       }).onConflictDoUpdate({
-        target: deepDivesTable.id,
+        target: deepDives.id,
         set: {
           portfolioEntry: deepDive.portfolioEntry,
           status: deepDive.status,
@@ -483,37 +512,62 @@ export function createPostgresStore(): Store {
         },
       });
     },
-    async getDeepDiveStep(deepDiveId, stepIndex) {
-      const row = await db.query.deepDiveSteps.findFirst({
+    async getDeepDiveTurn(deepDiveId, turnIndex) {
+      const row = await db.query.deepDiveTurns.findFirst({
         where: and(
-          eq(deepDiveStepsTable.deepDiveId, deepDiveId),
-          eq(deepDiveStepsTable.stepIndex, stepIndex),
+          eq(deepDiveTurns.deepDiveId, deepDiveId),
+          eq(deepDiveTurns.turnIndex, turnIndex),
         ),
       });
-      return row ? { ...row, options: row.options as DeepDiveStep["options"] } as DeepDiveStep : null;
+      if (!row) return null;
+      return {
+        id: row.id,
+        deepDiveId: row.deepDiveId,
+        turnIndex: row.turnIndex,
+        type: row.type as DeepDiveTurn["type"],
+        expertMessage: row.expertMessage,
+        interactionType: row.interactionType as DeepDiveTurn["interactionType"],
+        options: row.options as DeepDiveTurnOption[] | undefined,
+        selectedOptionId: row.selectedOptionId ?? undefined,
+        textResponse: row.textResponse ?? undefined,
+        createdAt: row.createdAt,
+      };
     },
-    async listDeepDiveSteps(deepDiveId) {
-      const rows = await db.select().from(deepDiveStepsTable).where(eq(deepDiveStepsTable.deepDiveId, deepDiveId));
+    async listDeepDiveTurns(deepDiveId) {
+      const rows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, deepDiveId));
       return rows
-        .map((s) => ({ ...s, options: s.options as DeepDiveStep["options"] }) as DeepDiveStep)
-        .sort((a, b) => a.stepIndex - b.stepIndex);
+        .map((t) => ({
+          id: t.id,
+          deepDiveId: t.deepDiveId,
+          turnIndex: t.turnIndex,
+          type: t.type as DeepDiveTurn["type"],
+          expertMessage: t.expertMessage,
+          interactionType: t.interactionType as DeepDiveTurn["interactionType"],
+          options: t.options as DeepDiveTurnOption[] | undefined,
+          selectedOptionId: t.selectedOptionId ?? undefined,
+          textResponse: t.textResponse ?? undefined,
+          createdAt: t.createdAt,
+        }))
+        .sort((a, b) => a.turnIndex - b.turnIndex);
     },
-    async upsertDeepDiveStep(step) {
-      await db.insert(deepDiveStepsTable).values({
-        id: step.id,
-        deepDiveId: step.deepDiveId,
-        stepIndex: step.stepIndex,
-        type: step.type,
-        prompt: step.prompt,
-        response: step.response,
-        options: step.options ?? null,
-        selectedOptionId: step.selectedOptionId ?? null,
-        createdAt: step.createdAt,
+    async upsertDeepDiveTurn(turn) {
+      await db.insert(deepDiveTurns).values({
+        id: turn.id,
+        deepDiveId: turn.deepDiveId,
+        turnIndex: turn.turnIndex,
+        type: turn.type,
+        expertMessage: turn.expertMessage,
+        interactionType: turn.interactionType,
+        options: turn.options ?? null,
+        selectedOptionId: turn.selectedOptionId ?? null,
+        textResponse: turn.textResponse ?? null,
+        createdAt: turn.createdAt,
       }).onConflictDoUpdate({
-        target: deepDiveStepsTable.id,
+        target: deepDiveTurns.id,
         set: {
-          response: step.response,
-          selectedOptionId: step.selectedOptionId ?? null,
+          expertMessage: turn.expertMessage,
+          selectedOptionId: turn.selectedOptionId ?? null,
+          textResponse: turn.textResponse ?? null,
         },
       });
     },

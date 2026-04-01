@@ -1,5 +1,5 @@
-import type { DeepDive, DeepDiveStep } from "@/lib/server/types";
 import { seededMissions } from "@/lib/server/constants";
+import type { DeepDive } from "@/lib/server/types";
 import type { MemoryState, Store } from "./types";
 
 declare global {
@@ -26,7 +26,7 @@ function getMemoryState(): MemoryState {
       reports: new Map(),
       choiceSets: new Map(),
       deepDives: new Map(),
-      deepDiveSteps: new Map(),
+      deepDiveTurns: new Map(),
     };
   }
 
@@ -178,47 +178,37 @@ export function createMemoryStore(): Store {
     async upsertChoiceSet(choiceSet) {
       state.choiceSets.set(choiceSet.id, choiceSet);
     },
-    // Deep-dive (memory)
+    // Deep-dive v2
     async getDeepDive(deepDiveId) {
       const dd = state.deepDives.get(deepDiveId);
       if (!dd) return null;
-      const steps = [...state.deepDiveSteps.values()]
-        .filter((s) => s.deepDiveId === deepDiveId)
-        .sort((a, b) => a.stepIndex - b.stepIndex);
-      return { ...dd, steps } as DeepDive;
-    },
-    async getDeepDiveByChildAndMission(childId, missionId) {
-      const dd = [...state.deepDives.values()].find(
-        (d) => d.childId === childId && d.missionId === missionId && d.status === "active",
-      );
-      if (!dd) return null;
-      const steps = [...state.deepDiveSteps.values()]
-        .filter((s) => s.deepDiveId === dd.id)
-        .sort((a, b) => a.stepIndex - b.stepIndex);
-      return { ...dd, steps } as DeepDive;
+      const turns = [...state.deepDiveTurns.values()]
+        .filter((t) => t.deepDiveId === deepDiveId)
+        .sort((a, b) => a.turnIndex - b.turnIndex);
+      return { ...dd, turns } as DeepDive;
     },
     async listDeepDivesByChild(childId) {
-      const dds = [...state.deepDives.values()].filter((d) => d.childId === childId);
+      const dds = [...state.deepDives.values()].filter((dd) => dd.childId === childId);
       return dds.map((dd) => {
-        const steps = [...state.deepDiveSteps.values()]
-          .filter((s) => s.deepDiveId === dd.id)
-          .sort((a, b) => a.stepIndex - b.stepIndex);
-        return { ...dd, steps } as DeepDive;
+        const turns = [...state.deepDiveTurns.values()]
+          .filter((t) => t.deepDiveId === dd.id)
+          .sort((a, b) => a.turnIndex - b.turnIndex);
+        return { ...dd, turns } as DeepDive;
       });
     },
     async upsertDeepDive(deepDive) {
       state.deepDives.set(deepDive.id, deepDive);
     },
-    async getDeepDiveStep(deepDiveId, stepIndex) {
-      return state.deepDiveSteps.get(`${deepDiveId}:${stepIndex}`) ?? null;
+    async getDeepDiveTurn(deepDiveId, turnIndex) {
+      return state.deepDiveTurns.get(`${deepDiveId}:${turnIndex}`) ?? null;
     },
-    async listDeepDiveSteps(deepDiveId) {
-      return [...state.deepDiveSteps.values()]
-        .filter((s) => s.deepDiveId === deepDiveId)
-        .sort((a, b) => a.stepIndex - b.stepIndex);
+    async listDeepDiveTurns(deepDiveId) {
+      return [...state.deepDiveTurns.values()]
+        .filter((t) => t.deepDiveId === deepDiveId)
+        .sort((a, b) => a.turnIndex - b.turnIndex);
     },
-    async upsertDeepDiveStep(step) {
-      state.deepDiveSteps.set(`${step.deepDiveId}:${step.stepIndex}`, step);
+    async upsertDeepDiveTurn(turn) {
+      state.deepDiveTurns.set(`${turn.deepDiveId}:${turn.turnIndex}`, turn);
     },
   };
 }

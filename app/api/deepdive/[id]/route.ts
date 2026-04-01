@@ -3,11 +3,11 @@ import { handleRoute } from "@/lib/server/route";
 
 export async function GET(
   request: Request,
-  context: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   return await handleRoute(async () => {
     const auth = await requireAuth(request);
-    const { id } = await context.params;
+    const { id } = await params;
     return await getDeepDiveDetail(auth, id);
   });
 }

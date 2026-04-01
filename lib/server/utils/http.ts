@@ -10,7 +10,15 @@ export class ApiError extends Error {
 }
 
 export function jsonResponse(body: unknown, init?: ResponseInit) {
-  return Response.json(body, init);
+  const headers = new Headers(init?.headers);
+  if (!headers.has("cache-control")) {
+    headers.set("cache-control", "no-store, private");
+  }
+
+  return Response.json(body, {
+    ...init,
+    headers,
+  });
 }
 
 export function errorResponse(error: unknown) {

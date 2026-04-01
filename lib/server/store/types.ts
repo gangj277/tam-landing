@@ -2,7 +2,7 @@ import type {
   ChildProfile,
   DailyChoiceSet,
   DeepDive,
-  DeepDiveStep,
+  DeepDiveTurn,
   ExpansionToolType,
   FamilyAccount,
   FamilyDevice,
@@ -71,14 +71,13 @@ export type Store = {
   getChoiceSet: (childId: string, choiceDate: string) => Promise<DailyChoiceSet | null>;
   listChoiceSetsByChild: (childId: string) => Promise<DailyChoiceSet[]>;
   upsertChoiceSet: (choiceSet: DailyChoiceSet) => Promise<void>;
-  // Deep-dive
+  // Deep-dive v2
   getDeepDive: (deepDiveId: string) => Promise<DeepDive | null>;
-  getDeepDiveByChildAndMission: (childId: string, missionId: string) => Promise<DeepDive | null>;
   listDeepDivesByChild: (childId: string) => Promise<DeepDive[]>;
-  upsertDeepDive: (deepDive: Omit<DeepDive, "steps">) => Promise<void>;
-  getDeepDiveStep: (deepDiveId: string, stepIndex: number) => Promise<DeepDiveStep | null>;
-  listDeepDiveSteps: (deepDiveId: string) => Promise<DeepDiveStep[]>;
-  upsertDeepDiveStep: (step: DeepDiveStep) => Promise<void>;
+  upsertDeepDive: (deepDive: Omit<DeepDive, "turns">) => Promise<void>;
+  getDeepDiveTurn: (deepDiveId: string, turnIndex: number) => Promise<DeepDiveTurn | null>;
+  listDeepDiveTurns: (deepDiveId: string) => Promise<DeepDiveTurn[]>;
+  upsertDeepDiveTurn: (turn: DeepDiveTurn) => Promise<void>;
 };
 
 export type MemoryState = {
@@ -98,6 +97,6 @@ export type MemoryState = {
   profiles: Map<string, UserProfileSnapshot>;
   reports: Map<string, WeeklyReport>;
   choiceSets: Map<string, DailyChoiceSet>;
-  deepDives: Map<string, Omit<DeepDive, "steps">>;
-  deepDiveSteps: Map<string, DeepDiveStep>;
+  deepDives: Map<string, Omit<DeepDive, "turns">>;
+  deepDiveTurns: Map<string, DeepDiveTurn>;
 };

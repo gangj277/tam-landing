@@ -226,8 +226,6 @@ export async function recalculateProfileByChildId(childId: string) {
     createdAt: child.createdAt,
     stats: {
       totalMissions: completedSessions.length,
-      totalDeepDives: 0,
-      portfolioEntries: 0,
       currentStreak,
       longestStreak,
       totalMinutes: completedMissions.reduce((sum, mission) => sum + mission.estimatedMinutes, 0),
@@ -293,5 +291,10 @@ export async function getProfileByChildId(payload: AuthTokenPayload, childId: st
     throw new ApiError(404, "CHILD_NOT_FOUND", "Child profile was not found");
   }
 
-  return (await store.getProfile(childId)) ?? (await recalculateProfileByChildId(childId));
+  const cached = await store.getProfile(childId);
+  // Recalculate if no profile or interestMap is stale (< 7 categories)
+  if (!cached || (cached.interestMap && cached.interestMap.length < 7)) {
+    return await recalculateProfileByChildId(childId);
+  }
+  return cached;
 }

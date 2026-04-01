@@ -20,8 +20,10 @@ import type {
   DifficultyType,
   WeeklyReport,
   UserProfileSnapshot,
-  DeepDive,
-  DeepDiveStep,
+  DeepDiveTurnType,
+  DeepDiveTurn,
+  ExpertPersona,
+  DeepDiveRealWorldCase,
 } from "../types";
 
 // ═══════════════════════════════════════
@@ -637,121 +639,123 @@ ${mirrorSuggestions.length > 0 ? `\n<최근 미러 제안>\n${mirrorSuggestions.
 }
 
 // ═══════════════════════════════════════
-// DEEP-DIVE PROMPT BUILDERS
+// 8. DEEP-DIVE TURN
 // ═══════════════════════════════════════
 
-export function buildDeepDivePortfolioPrompts(
+export function buildDeepDiveTurnPrompt(
+  turn: { turnIndex: number; type: DeepDiveTurnType },
+  expert: ExpertPersona,
   mission: Mission,
-  deepDive: DeepDive,
-  steps: DeepDiveStep[],
+  session: MissionSession | null,
+  realWorldCase: DeepDiveRealWorldCase,
+  childName: string,
+  childAge: number,
+  previousTurns: DeepDiveTurn[],
+  turnTemplate: Record<string, string>,
 ): { systemPrompt: string; userPrompt: string } {
-  const systemPrompt = `너는 10~14세 아이의 탐구 기록을 정리해주는 포트폴리오 도우미야.
+  const previousTurnRecap = previousTurns
+    .filter((t) => t.expertMessage)
+    .map((t) => {
+      const response = t.selectedOptionId
+        ? `선택: ${t.options?.find((o) => o.id === t.selectedOptionId)?.label ?? t.selectedOptionId}`
+        : t.textResponse
+          ? `답변: "${t.textResponse}"`
+          : "(아직 응답 없음)";
+      return `[Turn ${t.turnIndex}] ${t.type}: ${t.expertMessage?.slice(0, 80)}...\n  아이 ${response}`;
+    })
+    .join("\n");
 
-<규칙>
-1. 딱 1문장을 만들어. 길어도 60자 이내.
-2. 구조: "[경험/맥락] + [탐구 내용] + [입장/의견]"
-3. 예시:
-   - "화성 자원 배분 시뮬레이션과 케냐 가뭄 사례를 비교하며, 위기 상황에서 공정성과 생존의 균형이 중요하다는 입장을 정리함"
-   - "동물구조센터 브랜딩 경험과 유니세프 캠페인을 비교하며, 진심이 담긴 메시지가 사람을 움직인다는 관점을 탐구함"
-4. 톤: 자유학기제/고교학점제 생기부 활동란에 그대로 쓸 수 있는 기록체. '~함', '~정리함', '~탐구함' 등.
-5. 아이의 실제 답변과 선택을 반드시 반영해. 일반적인 요약 금지.
-6. 의견(Step 2)을 핵심으로 삼아.
-7. JSON 형식으로 반환해: {"portfolioEntry": "문장"}
-</규칙>`;
+  const systemPrompt = `너는 "${expert.name}"이야. ${expert.role}이고 ${expert.organization}에서 일해.
 
-  const caseStep = steps.find((s) => s.stepIndex === 0);
-  const questionStep = steps.find((s) => s.stepIndex === 1);
-  const opinionStep = steps.find((s) => s.stepIndex === 2);
+<페르소나>
+${expert.personality}
+</페르소나>
 
-  const userPrompt = `<연결된 미션>
-제목: ${mission.title}
-역할: ${mission.role}
-카테고리: ${mission.category}
-</연결된 미션>
-
-<딥다이브>
-제목: ${deepDive.title}
-사례: ${deepDive.realWorldCase.headline}
-${deepDive.realWorldCase.context}
-</딥다이브>
-
-<아이의 답변>
-사례 감상: ${caseStep?.response ?? "없음"}
-탐구 질문 답변: ${questionStep?.response ?? "없음"}
-자기 의견: ${opinionStep?.response ?? "없음"}
-</아이의 답변>
-
-이 아이의 탐구를 포트폴리오 1문장으로 정리해줘.`;
-
-  return { systemPrompt, userPrompt };
-}
-
-export function buildDeepDiveGenerationPrompts(
-  mission: Mission,
-  session: MissionSession,
-  profile: UserProfileSnapshot | null,
-  previousDeepDives: DeepDive[],
-): { systemPrompt: string; userPrompt: string } {
-  const systemPrompt = `너는 10~14세 아이를 위한 딥다이브(현실 사례 탐구) 설계자야.
-
-<딥다이브란?>
-전날 완료한 판타지 미션의 주제를 현실 세계의 실제 사례와 연결하는 4단계 탐구야.
-Step 0 (case): 실제 사례 소개 (한국 사례 우선, 글로벌 보조)
-Step 1 (question): 미션과 현실 비교 탐구 질문 2-3개 (선택형, 모든 선택지가 동등하게 타당)
-Step 2 (opinion): 아이 자신의 의견 정리
-Step 3 (portfolio): 포트폴리오 1문장 (별도 AI가 처리)
+<미션 연결>
+${expert.connectionToMission}
+</미션 연결>
 
 <절대 규칙>
-1. 실제 사례만 사용해. 가상 사례 금지. 검증 가능한 사건/사례/데이터만.
-2. 사례 출처를 source 필드에 명시해.
-3. context는 반말, 3-5줄. 10세도 이해할 수 있게.
-4. keyQuestion은 미션과 현실의 비교를 유도하는 질문.
-5. 질문 선택지에 정답이 있으면 안 돼.
-6. 이전에 사용한 사례와 중복되면 안 돼.
-7. 한국 사례 우선.
-</절대 규칙>
+1. 반말 사용. 10~14세 한국어. 친근하지만 유치하지 않게.
+2. 너는 실제 전문가야. 아이에게 현실 이야기를 들려주는 형/누나/언니/오빠야.
+3. 한 번에 2~4문장으로 말해. 너무 길면 지루해져.
+4. 아이의 이전 반응을 반영해서 대화를 이어가. "아 그렇게 생각하는구나" 같은 리액션.
+5. 가르치려 하지 마. 같이 생각하는 느낌으로.
+6. 아이의 미션 경험(${mission.title})과 자연스럽게 연결해.
+7. ${expert.personalAnecdote ? `네 개인 경험을 자연스럽게 녹여: ${expert.personalAnecdote}` : ""}
+</절대 규칙>`;
 
-${profile ? `<아이 프로필>
-나이: ${profile.age}세
-관심 경향: ${profile.discoveries?.valueOrientation?.summary ?? "아직 탐색 중"}
-의사결정: ${profile.discoveries?.decisionStyle?.summary ?? "아직 탐색 중"}
-</아이 프로필>` : ""}
+  const turnGuidance: Record<DeepDiveTurnType, string> = {
+    arrival: `[Turn 0: 등장] 자기소개를 하면서 아이(${childName})에게 인사해. 미션에서의 경험에 대해 자연스럽게 물어봐. 힌트: ${turnTemplate.hint ?? ""}`,
+    case: `[Turn 1: 사례] 네가 경험한 실제 사례를 들려줘. ${realWorldCase.headline}에 대한 이야기야. 각도: ${turnTemplate.angle ?? ""}. ${turnTemplate.personalStory ? `개인 이야기: ${turnTemplate.personalStory}` : ""}`,
+    question: `[Turn 2: 질문] 아이에게 열린 질문을 던져. ${turnTemplate.theme ?? ""}에 대해 아이가 자유롭게 생각해볼 수 있는 질문이야. 미션 연결: ${turnTemplate.bridgeToMission ?? ""}`,
+    insight: `[Turn 3: 인사이트] 이 대화를 통해 발견한 것을 나눠. 핵심 메시지: ${turnTemplate.coreMessage ?? ""}. 하지만 '정답'처럼 들리면 안 돼. "나는 이렇게 생각하게 됐어"의 느낌으로.`,
+    portfolio: `[Turn 4: 포트폴리오] 이 대화를 한 문장으로 정리해달라고 부탁해. "오늘 나눈 이야기 중에서 가장 기억에 남는 걸 한 줄로 써볼래?" 형태로.`,
+  };
 
-<JSON 반환 형식>
-{
-  "title": "딥다이브 제목",
-  "realWorldCase": {
-    "headline": "사례 헤드라인",
-    "context": "반말 3-5줄 설명",
-    "keyQuestion": "미션↔현실 비교 질문",
-    "source": "출처"
-  },
-  "stepTemplates": {
-    "caseIntro": "어제 ~~했잖아? 실제로...",
-    "questions": [
-      {"prompt": "질문1", "options": [{"id":"q1-a","label":"선택지A"}, ...]},
-      {"prompt": "질문2", "options": [{"id":"q2-a","label":"선택지A"}, ...]}
-    ],
-    "opinionTemplate": "이 상황에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
-    "opinionScaffolds": ["예시1", "예시2", "예시3"]
-  }
-}
-</JSON 반환 형식>`;
+  const userPrompt = `<아이 정보>
+이름: ${childName}, ${childAge}세
+미션: ${mission.title} (${mission.role})
+미션 상황: ${mission.situation}
+${session?.initialChoiceLabel ? `미션에서의 선택: "${session.initialChoiceLabel}"` : ""}
+</아이 정보>
 
-  const previousCases = previousDeepDives
-    .map((d) => d.realWorldCase.headline)
-    .join(", ");
+<실제 사례>
+${realWorldCase.headline}
+${realWorldCase.context}
+핵심 질문: ${realWorldCase.keyQuestion}
+</실제 사례>
 
-  const userPrompt = `<전날 미션>
-제목: ${mission.title}
-역할: ${mission.role}
-카테고리: ${mission.category}
-상황: ${mission.situation}
-핵심 질문: ${mission.coreQuestion}
-</전날 미션>
+${previousTurnRecap ? `<이전 대화>\n${previousTurnRecap}\n</이전 대화>\n` : ""}
+${turnGuidance[turn.type]}
 
-${session.initialChoiceLabel ? `<아이의 선택>\n"${session.initialChoiceLabel}"\n</아이의 선택>\n` : ""}${previousCases ? `<이미 사용한 사례 (중복 방지)>\n${previousCases}\n</이미 사용한 사례>\n` : ""}
-이 미션과 연결되는 딥다이브를 설계해줘.`;
+expertMessage 하나를 생성해줘. 순수 텍스트만, JSON 아님.`;
 
   return { systemPrompt, userPrompt };
 }
+
+// ═══════════════════════════════════════
+// 9. DEEP-DIVE PORTFOLIO
+// ═══════════════════════════════════════
+
+export function buildDeepDivePortfolioPrompt(
+  expert: ExpertPersona,
+  mission: Mission,
+  childName: string,
+  turns: DeepDiveTurn[],
+): { systemPrompt: string; userPrompt: string } {
+  const systemPrompt = `너는 아이의 딥다이브 대화를 한 줄 포트폴리오로 요약하는 역할이야.
+
+<규칙>
+1. 아이가 직접 쓴 textResponse가 있으면 그것을 다듬어서 사용해.
+2. 없으면 대화 맥락에서 핵심 발견을 한 줄로 요약해.
+3. 아이의 이름(${childName})을 포함하지 마. 보편적인 문장으로.
+4. 한국어. 20~40자. 아이가 쓴 것처럼 자연스럽게.
+5. 반말 사용.
+</규칙>`;
+
+  const recap = turns
+    .filter((t) => t.expertMessage || t.textResponse || t.selectedOptionId)
+    .map((t) => {
+      const lines: string[] = [];
+      if (t.expertMessage) lines.push(`전문가: ${t.expertMessage.slice(0, 100)}`);
+      if (t.textResponse) lines.push(`아이: "${t.textResponse}"`);
+      if (t.selectedOptionId && t.options) {
+        const opt = t.options.find((o) => o.id === t.selectedOptionId);
+        if (opt) lines.push(`아이 선택: "${opt.label}"`);
+      }
+      return `[Turn ${t.turnIndex}] ${lines.join(" | ")}`;
+    })
+    .join("\n");
+
+  const userPrompt = `<대화 요약>
+전문가: ${expert.name} (${expert.role}, ${expert.organization})
+미션: ${mission.title}
+${recap}
+</대화 요약>
+
+이 대화의 핵심 발견을 한 줄 포트폴리오 문장으로 써줘. 순수 텍스트만, JSON 아님.`;
+
+  return { systemPrompt, userPrompt };
+}
+

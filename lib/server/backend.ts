@@ -61,13 +61,14 @@ export {
   resolveReportPdfDownload,
 } from "./services/reports";
 
-// Deep-dive
+// Deep-dive (v2)
 export {
-  getTodayActivity,
   createDeepDiveSession,
-  getDeepDiveDetail,
-  recordDeepDiveStepResponse,
+  streamDeepDiveTurn,
+  recordDeepDiveTurnResponse,
   completeDeepDive,
+  getDeepDiveDetail,
   listDeepDivesByChild,
   getPortfolioByChild,
+  getTodayActivity,
 } from "./services/deep-dive";
