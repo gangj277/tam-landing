@@ -1,9 +1,4 @@
-import type {
-  Mission,
-  MissionSession,
-  UserProfile,
-  ScenarioChain,
-} from "./types";
+import type { Mission } from "./types";
 
 // ═══════════════════════════════════════
 // MISSIONS
@@ -668,405 +663,326 @@ export const MISSIONS: Mission[] = [
 ];
 
 // ═══════════════════════════════════════
-// SCENARIO CHAIN (화성 시장 미션 — 병원 선택 루트)
+// HARDCODED DEEP-DIVES (7개, 각 미션에 연결)
 // ═══════════════════════════════════════
 
-export const MARS_SCENARIO_CHAIN: ScenarioChain = {
-  missionId: "mission-mars-mayor",
-  initialChoiceId: "hospital-first",
-  rounds: [
-    {
-      id: "round-1",
-      consequence: {
-        narrative:
-          "병원에 물이 도착했어. 의사들이 안도의 한숨을 내쉬었어.\n\n그런데 농장 팀장이 주민 30명을 데리고 시청 앞에 모였어. \"우리 작물이 죽어가고 있다\"는 피켓을 들고.",
-        newDilemma: "시장으로서 어떻게 대응할래?",
-      },
-      emotionOptions: [
-        { id: "e1-firm", emoji: "😤", label: "단호하게", valueTags: ["independence", "logic"] },
-        { id: "e1-sorry", emoji: "😰", label: "미안하게", valueTags: ["empathy", "emotion"] },
-        { id: "e1-calm", emoji: "🤔", label: "차분하게", valueTags: ["logic", "community"] },
-      ],
-      methodOptions: [
-        { id: "m1-direct", emoji: "📢", label: "직접 나가서", valueTags: ["adventure", "independence"] },
-        { id: "m1-message", emoji: "📝", label: "메시지로", valueTags: ["safety", "logic"] },
-        { id: "m1-private", emoji: "🤝", label: "대표만 만나서", valueTags: ["empathy", "community"] },
-      ],
-      thinkingTools: [
-        {
-          type: "broaden",
-          label: "만약에...",
-          emoji: "🔭",
-          card: {
-            narrative:
-              "만약 농장에 먼저 물을 보냈다면?\n→ 환자 3명의 상태가 악화됐을 거야. 하지만 다음 달 식량은 안정적이었겠지.",
-          },
-        },
-        {
-          type: "reframe",
-          label: "그 사람은...",
-          emoji: "🔄",
-          card: {
-            narrative:
-              "농장 팀장 민호의 시선으로 보면:\n\"내가 1년 동안 키운 작물이야. 이걸로 도시 전체가 먹고 사는데... 왜 내 말은 아무도 안 들어주지?\"",
-          },
-        },
-        {
-          type: "subvert",
-          label: "전혀 다르게",
-          emoji: "🌀",
-          card: {
-            narrative:
-              "갑자기 지하수 탐지 드론이 새로운 수원을 발견했다는 보고가 들어왔어! 하지만 그곳은 도시 경계 밖 위험지대야. 탐사팀을 보낼까?",
-          },
-        },
-      ],
-    },
-    {
-      id: "round-2",
-      consequence: {
-        narrative:
-          "농장 팀장과 만났어. 처음엔 화가 나 있었지만, 네가 이야기를 들어주니까 조금 누그러졌어.\n\n그런데 팀장이 물었어:\n\"그러면 2주 뒤에는 농장이 우선인가요?\"",
-        newDilemma: "약속을 할 수 있을까?",
-      },
-      emotionOptions: [
-        { id: "e2-promise", emoji: "🤝", label: "약속한다", valueTags: ["community", "empathy"] },
-        { id: "e2-honest", emoji: "🤷", label: "모르겠다고 솔직하게", valueTags: ["independence", "logic"] },
-        { id: "e2-idea", emoji: "💡", label: "다른 방법을 제안", valueTags: ["creativity", "adventure"] },
-      ],
-      methodOptions: [
-        { id: "m2-eye", emoji: "👀", label: "눈을 보면서", valueTags: ["empathy", "emotion"] },
-        { id: "m2-data", emoji: "📊", label: "데이터를 보여주며", valueTags: ["logic", "efficiency"] },
-        { id: "m2-together", emoji: "🙌", label: "같이 해결하자며", valueTags: ["community", "fairness"] },
-      ],
-      thinkingTools: [
-        {
-          type: "broaden",
-          label: "만약에...",
-          emoji: "🔭",
-          card: {
-            narrative:
-              "만약 약속을 했는데 못 지키면?\n→ 시장에 대한 신뢰가 완전히 무너져. 다음번에는 아무도 네 말을 안 믿게 될 수도 있어.",
-          },
-        },
-        {
-          type: "reframe",
-          label: "그 사람은...",
-          emoji: "🔄",
-          card: {
-            narrative:
-              "병원 원장의 시선으로 보면:\n\"시장이 우리한테 물을 보내준 건 고맙지만... 농장 사람들의 반발이 걱정돼. 결국 우리한테도 불똥이 튀지 않을까?\"",
-          },
-        },
-        {
-          type: "subvert",
-          label: "전혀 다르게",
-          emoji: "🌀",
-          card: {
-            narrative:
-              "농장 팀장이 갑자기 제안했어: \"병원 옥상에 수경재배 시설을 만들면 어때요? 물도 아끼고, 환자들 음식도 해결되고.\" 예상 못한 아이디어야!",
-          },
-        },
-      ],
-    },
-    {
-      id: "round-3",
-      consequence: {
-        narrative:
-          "네 제안대로 주민 회의가 열렸어. 모두가 모인 자리에서 물 배분 계획을 함께 논의하기로 했어.\n\n그런데 회의 중에 한 주민이 손을 들었어:\n\"시장님, 솔직히 말해주세요. 우리가 여기서 버틸 수 있는 건 얼마나 되나요?\"",
-        newDilemma: "모두 앞에서 솔직할 수 있을까?",
-      },
-      emotionOptions: [
-        { id: "e3-truth", emoji: "💪", label: "솔직하게 말한다", valueTags: ["independence", "community"] },
-        { id: "e3-hope", emoji: "🌟", label: "희망적으로 말한다", valueTags: ["empathy", "emotion"] },
-        { id: "e3-plan", emoji: "📋", label: "계획을 보여준다", valueTags: ["logic", "efficiency"] },
-      ],
-      methodOptions: [
-        { id: "m3-stand", emoji: "🧍", label: "일어서서 정면으로", valueTags: ["independence", "adventure"] },
-        { id: "m3-sit", emoji: "🪑", label: "앉은 채로 편하게", valueTags: ["empathy", "community"] },
-        { id: "m3-walk", emoji: "🚶", label: "다가가서 가까이", valueTags: ["empathy", "emotion"] },
-      ],
-      thinkingTools: [
-        {
-          type: "broaden",
-          label: "만약에...",
-          emoji: "🔭",
-          card: {
-            narrative:
-              "만약 거짓말을 했다가 들키면?\n→ \"시장이 우리한테 거짓말을 했다\"는 소문이 퍼져. 도시의 유일한 리더에 대한 신뢰가 사라져.",
-          },
-        },
-        {
-          type: "reframe",
-          label: "그 사람은...",
-          emoji: "🔄",
-          card: {
-            narrative:
-              "질문한 주민 지영의 시선:\n\"나는 그냥 알고 싶은 거야. 좋든 나쁘든. 불확실한 게 제일 무서워. 솔직하면 같이 버틸 수 있어.\"",
-          },
-        },
-        {
-          type: "subvert",
-          label: "전혀 다르게",
-          emoji: "🌀",
-          card: {
-            narrative:
-              "이때 통신 시스템에서 지구의 신호가 잡혔어! 보급선이 3주 뒤 도착한다는 메시지야. 하지만 100% 확실하지는 않아.",
-          },
-        },
-      ],
-      closingPrompt: "오늘 가장 어려웠던 순간은 언제였어?",
-    },
-  ],
-  epilogue: {
-    title: "네가 만든 화성 도시의 하루",
-    scenes: [
-      {
-        text: "병원에 물이 먼저 도착했어. 탈수 증세를 보이던 환자 3명이 치료를 받을 수 있었어. 의료팀은 \"하루만 더 늦었으면 위험했다\"고 했어.",
-        mood: "positive",
-      },
-      {
-        text: "농장 팀장은 처음엔 화가 났지만, 네가 직접 만나서 이야기를 들어준 뒤 조금 누그러졌어. \"다음엔 우리 먼저\"라는 약속 대신, 함께 방법을 찾자는 제안에 고개를 끄덕였어.",
-        mood: "bittersweet",
-      },
-      {
-        text: "주민 회의에서는 처음으로 모든 구역 대표가 한자리에 모였어. 네가 솔직하게 상황을 설명하자, 주민들이 스스로 물 절약 아이디어를 내기 시작했어.",
-        mood: "hopeful",
-      },
-      {
-        text: "아레스의 첫날이 저물고 있어. 돔 밖으로 붉은 석양이 지고, 돔 안에서는 내일을 준비하는 사람들의 불빛이 하나둘 켜지고 있어. 완벽하진 않았지만, 아무도 포기하지 않은 하루였어.",
-        mood: "hopeful",
-      },
-    ],
-    closingLine: "이건 네가 만든 이야기야. 다른 선택을 했다면 완전히 다른 하루가 됐을 거야.",
-  },
-  finalCard: {
-    narrative:
-      "시장으로서의 첫날이 끝났어.\n\n네가 내린 결정들이 어떤 의미였는지, 거울에서 함께 돌아보자.",
-  },
-};
-
-export function getScenarioChain(missionId: string): ScenarioChain | undefined {
-  if (missionId === "mission-mars-mayor") return MARS_SCENARIO_CHAIN;
-  return undefined;
+export interface HardcodedDeepDiveQuestion {
+  prompt: string;
+  options: { id: string; label: string }[];
+  followUpPrompt?: string;
 }
 
-// ═══════════════════════════════════════
-// SESSION DATA (서연이의 Day 1)
-// ═══════════════════════════════════════
-
-export const SEOYEON_SESSION: MissionSession = {
-  id: "session-seoyeon-day1",
-  missionId: "mission-mars-mayor",
-  userId: "user-seoyeon",
-  startedAt: "2024-03-22T16:30:00Z",
-  completedAt: "2024-03-22T16:38:00Z",
-  choicesMade: [
-    {
-      choiceId: "hospital-first",
-      timestamp: "2024-03-22T16:32:00Z",
-      reflectionNote:
-        "당장 아픈 사람이 있는데 나중 일을 먼저 생각하는 건 이상해서",
-    },
-  ],
-  conversation: [
-    {
-      role: "assistant",
-      content:
-        "시장님, 병원을 선택하셨군요. 저도 그 마음은 이해해요. 근데 농장 쪽 사람들한테는 어떻게 설명할 건가요? 벌써 불만이 나오고 있거든요.",
-      timestamp: "2024-03-22T16:32:30Z",
-    },
-    {
-      role: "user",
-      content: "아픈 사람이 먼저라고 솔직하게 말할게",
-      timestamp: "2024-03-22T16:33:15Z",
-    },
-    {
-      role: "assistant",
-      content:
-        '솔직한 거 좋아요. 근데 농장 팀장이 이렇게 물어보면 어떡하죠? "3주 뒤에 식량이 부족해지면 그때는 어떻게 할 건가요?"',
-      timestamp: "2024-03-22T16:33:30Z",
-    },
-    {
-      role: "user",
-      content:
-        "그때까지 지구에서 보급품이 오지 않을까? 일단 지금 급한 거부터 해결하고 싶어",
-      timestamp: "2024-03-22T16:34:20Z",
-    },
-    {
-      role: "assistant",
-      content:
-        "보급품에 기대를 거는 거구나. 만약 보급품이 늦어지면 어떡할지도 생각해봐야 할 수도 있어. 시장으로서 최악의 상황도 준비해야 하니까. 혹시 두 번째 계획은 있어?",
-      timestamp: "2024-03-22T16:34:35Z",
-    },
-    {
-      role: "user",
-      content:
-        "음... 그러면 주민들한테 물 아끼는 방법을 같이 찾자고 할 수 있을 것 같아",
-      timestamp: "2024-03-22T16:35:30Z",
-    },
-    {
-      role: "assistant",
-      content:
-        "오 그거 좋은 생각이다! 혼자 결정하는 게 아니라 주민들이랑 같이 해결하겠다는 거네. 시장님, 오늘 정말 어려운 결정을 했어. 마지막으로 하나만 — 오늘 이 결정에서 가장 중요했던 건 뭐였어?",
-      timestamp: "2024-03-22T16:35:45Z",
-    },
-    {
-      role: "user",
-      content: "지금 아픈 사람을 그냥 두면 안 된다는 거",
-      timestamp: "2024-03-22T16:36:30Z",
-    },
-  ],
-  toolsUsed: [],
-  mirror: {
-    observations: [
-      {
-        text: '지금 눈앞의 사람을 먼저 생각했어. "당장 아픈 사람이 있는데"라고 했을 때, 너한테는 지금 이 순간이 가장 중요한 거였어.',
-        valueTags: ["empathy", "safety"],
-        tone: "neutral",
-      },
-      {
-        text: "결정을 끝까지 밀고 나갔어. 반대 의견을 들었는데도 처음 생각을 바꾸지 않았어. 자기 기준이 분명한 편이야.",
-        valueTags: ["independence"],
-        tone: "encouraging",
-      },
-    ],
-    patternNote: null,
-    nextSuggestion: {
-      reason: "내일은 다른 사람의 시각에서 생각해보는 미션이 기다리고 있어",
-      categoryHint: "perspective",
-    },
-  },
-};
-
-// ═══════════════════════════════════════
-// PAST SESSIONS (서연이의 히스토리)
-// ═══════════════════════════════════════
-
-export interface PastSession {
+export interface HardcodedDeepDive {
   missionId: string;
   title: string;
-  category: string;
-  completedAt: string;
-  choiceSummary: string;
+  realWorldCase: {
+    headline: string;
+    context: string;
+    keyQuestion: string;
+    source?: string;
+  };
+  stepTemplates: {
+    caseIntro: string;
+    questions: HardcodedDeepDiveQuestion[];
+    opinionTemplate: string;
+    opinionScaffolds: string[];
+  };
 }
 
-export const PAST_SESSIONS: PastSession[] = [
+export const HARDCODED_DEEP_DIVES: HardcodedDeepDive[] = [
+  // DD1: mission-mars-mayor → 케냐 물 부족
+  {
+    missionId: "mission-mars-mayor",
+    title: "실제 가뭄 지역의 자원 배분",
+    realWorldCase: {
+      headline: "2024년 케냐 투르카나 지역 물 부족 위기",
+      context: "케냐 북부 투르카나 지역에서 3년 연속 가뭄이 이어졌어. 물이 부족해지자, 지역 정부는 농업용수와 식수 중 어디에 먼저 보낼지 결정해야 했어. 농업을 살리면 내년 식량이 확보되지만, 당장 마실 물이 없는 가정이 수천 곳이었어.",
+      keyQuestion: "네가 어제 화성에서 내린 결정과 이 실제 상황은 뭐가 같고 뭐가 달라?",
+      source: "UNICEF Kenya, 2024",
+    },
+    stepTemplates: {
+      caseIntro: "어제 화성 아레스에서 물 배분을 결정했잖아? 실제로 지구에서도 비슷한 일이 일어나고 있어.",
+      questions: [
+        {
+          prompt: "화성과 케냐, 두 상황에서 가장 비슷한 점은 뭘까?",
+          options: [
+            { id: "q1-resource", label: "자원이 부족하다는 점" },
+            { id: "q1-leader", label: "누군가가 결정해야 한다는 점" },
+            { id: "q1-anxiety", label: "사람들이 불안해한다는 점" },
+            { id: "q1-time", label: "시간이 촉박하다는 점" },
+          ],
+        },
+        {
+          prompt: "가장 다른 점은 뭘까?",
+          options: [
+            { id: "q2-real", label: "케냐는 실제 사람들의 이야기라는 점" },
+            { id: "q2-scale", label: "케냐는 훨씬 많은 사람이 영향받는 점" },
+            { id: "q2-help", label: "지구에는 다른 나라가 도울 수 있다는 점" },
+            { id: "q2-result", label: "실제로 결과가 남는다는 점" },
+          ],
+        },
+        {
+          prompt: "네가 케냐 지역 관리자라면 어떻게 했을까?",
+          options: [],
+          followUpPrompt: "자유롭게 적어봐",
+        },
+      ],
+      opinionTemplate: "자원이 부족할 때 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "모두에게 공평하게 나누는 것",
+        "가장 급한 곳에 먼저 보내는 것",
+        "함께 해결 방법을 찾는 것",
+        "전문가의 판단을 따르는 것",
+      ],
+    },
+  },
+
+  // DD2: mission-animal-rescue → 유니세프 캠페인
   {
     missionId: "mission-animal-rescue",
-    title: "동물구조센터 브랜딩 디자이너",
-    category: "world",
-    completedAt: "2024-03-27",
-    choiceSummary: "진지한 톤의 포스터 선택",
+    title: "실제 NGO의 관심 끌기 전략",
+    realWorldCase: {
+      headline: "유니세프의 '좋아요 말고 백신을' 캠페인",
+      context: "유니세프 스웨덴 지부가 SNS에서 '좋아요'만 누르고 후원하지 않는 사람들을 향해 도발적인 캠페인을 만들었어. '좋아요가 생명을 구하지 않습니다'라는 메시지로 전 세계적인 반향을 일으켰어. 이 캠페인 후 실제 후원금이 크게 늘었어.",
+      keyQuestion: "어제 네가 동물구조센터에서 선택한 접근 방식과 비교하면 어떤 차이가 있어?",
+      source: "UNICEF Sweden, 2013",
+    },
+    stepTemplates: {
+      caseIntro: "어제 동물구조센터에서 사람들의 관심을 끄는 방법을 고민했잖아? 실제로 비영리단체들은 이 문제를 매일 고민하고 있어.",
+      questions: [
+        {
+          prompt: "유니세프 캠페인이 성공한 이유는 뭘까?",
+          options: [
+            { id: "q1-shock", label: "사람들을 놀라게 했으니까" },
+            { id: "q1-guilty", label: "양심을 자극했으니까" },
+            { id: "q1-honest", label: "솔직한 메시지였으니까" },
+            { id: "q1-simple", label: "한 문장으로 핵심을 찔렀으니까" },
+          ],
+        },
+        {
+          prompt: "귀여운 동물 사진으로 관심을 끄는 것과, 도발적인 메시지로 끄는 것. 어떤 게 더 효과적일까?",
+          options: [
+            { id: "q2-cute", label: "귀여운 사진이 더 많은 사람을 끌어" },
+            { id: "q2-provoke", label: "도발적인 메시지가 더 오래 기억에 남아" },
+            { id: "q2-both", label: "상황에 따라 다를 것 같아" },
+            { id: "q2-neither", label: "진짜 이야기를 들려주는 게 제일 나아" },
+          ],
+        },
+      ],
+      opinionTemplate: "사람들의 관심을 끌 때 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "진짜 문제를 솔직하게 보여주는 것",
+        "감정을 움직이는 이미지를 쓰는 것",
+        "한 문장으로 핵심을 전달하는 것",
+        "행동으로 연결되는 메시지를 만드는 것",
+      ],
+    },
   },
+
+  // DD3: mission-fairness → 핀란드 급식
   {
     missionId: "mission-fairness",
-    title: "공정한 나눔 vs 효율적 분배",
-    category: "value",
-    completedAt: "2024-03-26",
-    choiceSummary: "모두에게 조금씩 나눔",
+    title: "모든 학생에게 같은 급식을?",
+    realWorldCase: {
+      headline: "핀란드의 무료 학교 급식 시스템",
+      context: "핀란드에서는 모든 학생에게 무료 급식을 제공해. 메뉴 선택권이 없는 대신 모두가 똑같이 먹어. 한국에서는 선택급식이 늘고 있지만, 인기 메뉴는 항상 부족하고 불만이 나와.",
+      keyQuestion: "모두에게 똑같이 주는 것과, 선택할 수 있게 하는 것. 어느 쪽이 더 공정할까?",
+      source: "Finnish National Agency for Education",
+    },
+    stepTemplates: {
+      caseIntro: "어제 급식실에서 '공정한 나눔'을 고민했잖아? 실제로 여러 나라에서 이 문제를 다르게 풀고 있어.",
+      questions: [
+        {
+          prompt: "핀란드식(모두 같은 급식)과 한국식(선택급식). 각각의 장점은?",
+          options: [
+            { id: "q1-equal", label: "같은 급식은 비교할 필요가 없어서 편해" },
+            { id: "q1-choice", label: "선택급식은 내가 원하는 걸 먹을 수 있어" },
+            { id: "q1-fair", label: "같은 급식이 더 공평한 것 같아" },
+            { id: "q1-happy", label: "선택할 수 있으면 더 행복해" },
+          ],
+        },
+        {
+          prompt: "만약 네 학교에서 새 급식 방식을 정한다면?",
+          options: [
+            { id: "q2-same", label: "모두 같은 걸 먹자" },
+            { id: "q2-choose", label: "각자 고르게 하자" },
+            { id: "q2-mix", label: "기본 메뉴 + 추가 선택" },
+            { id: "q2-vote", label: "학생 투표로 정하자" },
+          ],
+        },
+      ],
+      opinionTemplate: "공정한 나눔에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "모두가 똑같이 받는 것",
+        "각자 필요한 만큼 받는 것",
+        "스스로 선택할 수 있는 것",
+        "과정이 투명한 것",
+      ],
+    },
   },
+
+  // DD4: mission-three-perspectives → 학교 상담실
   {
     missionId: "mission-three-perspectives",
-    title: "같은 교실, 세 개의 시선",
-    category: "perspective",
-    completedAt: "2024-03-25",
-    choiceSummary: "자고 있는 학생의 시선에 가장 공감",
+    title: "실제 학교 상담실에서 일어나는 일",
+    realWorldCase: {
+      headline: "서울 중학교 Wee 클래스 상담 이야기",
+      context: "서울의 한 중학교 상담실에는 한 달에 평균 47건의 상담 요청이 들어와. 가장 많은 이유는 '친구 관계'야. 하지만 상담 선생님은 이야기를 들어보면, 겉으로 보이는 것과 속사정이 항상 달라.",
+      keyQuestion: "같은 상황이라도 사람마다 느끼는 게 다르다는 걸, 어제 경험으로 어떻게 느꼈어?",
+      source: "서울시교육청 Wee 프로젝트 현황, 2023",
+    },
+    stepTemplates: {
+      caseIntro: "어제 교실에서 세 사람의 시선으로 같은 장면을 봤잖아? 실제 학교에서도 매일 이런 일이 일어나고 있어.",
+      questions: [
+        {
+          prompt: "상담 선생님이 '겉으로 보이는 것과 속사정이 다르다'고 했어. 왜 그럴까?",
+          options: [
+            { id: "q1-hide", label: "사람들은 속마음을 잘 안 보여주니까" },
+            { id: "q1-different", label: "같은 일도 사람마다 다르게 느끼니까" },
+            { id: "q1-complex", label: "문제가 보이는 것보다 복잡하니까" },
+            { id: "q1-afraid", label: "진짜 이유를 말하기 무서우니까" },
+          ],
+        },
+        {
+          prompt: "친구가 기분이 안 좋아 보일 때, 가장 먼저 할 수 있는 건?",
+          options: [
+            { id: "q2-ask", label: "괜찮냐고 물어보기" },
+            { id: "q2-wait", label: "말할 때까지 옆에 있어주기" },
+            { id: "q2-space", label: "혼자 있고 싶을 수 있으니 기다리기" },
+            { id: "q2-share", label: "내 이야기를 먼저 해서 편하게 해주기" },
+          ],
+        },
+      ],
+      opinionTemplate: "다른 사람을 이해하려면 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "먼저 들어보는 것",
+        "내 기준으로 판단하지 않는 것",
+        "그 사람 입장에서 생각해보는 것",
+        "겉모습만으로 결론 내리지 않는 것",
+      ],
+    },
   },
+
+  // DD5: mission-hidden-design → 지하철 스크린도어
   {
     missionId: "mission-hidden-design",
-    title: "우리 집의 숨은 디자인",
-    category: "real",
-    completedAt: "2024-03-24",
-    choiceSummary: "리모컨을 가장 잘 디자인된 물건으로 선택",
+    title: "디자인이 사람을 바꾼 순간",
+    realWorldCase: {
+      headline: "서울 지하철 스크린도어, 사고 97% 감소",
+      context: "서울 지하철에 스크린도어가 설치된 후 선로 추락 사고가 97% 줄었어. '조심하세요'라고 말한 게 아니라, 환경 자체를 바꿔서 행동을 바꾼 거야. 이런 걸 '넛지 디자인'이라고 해.",
+      keyQuestion: "'말'로 바꾸는 것과 '디자인'으로 바꾸는 것, 어느 쪽이 더 효과적일까?",
+      source: "서울교통공사, 2023",
+    },
+    stepTemplates: {
+      caseIntro: "어제 집에서 숨은 디자인을 찾아봤잖아? 실제로 디자인 하나가 수만 명의 행동을 바꾸기도 해.",
+      questions: [
+        {
+          prompt: "스크린도어가 사고를 97% 줄인 이유는?",
+          options: [
+            { id: "q1-block", label: "물리적으로 위험한 곳에 갈 수 없게 했으니까" },
+            { id: "q1-think", label: "사람들이 위험을 더 잘 인식하게 됐으니까" },
+            { id: "q1-habit", label: "안전한 행동이 자연스럽게 됐으니까" },
+            { id: "q1-care", label: "지하철이 승객을 더 신경 쓴다는 느낌이 들어서" },
+          ],
+        },
+        {
+          prompt: "학교에서 '복도에서 뛰지 마세요' 대신 디자인으로 해결한다면?",
+          options: [
+            { id: "q2-floor", label: "바닥에 걷는 속도 가이드라인 그리기" },
+            { id: "q2-narrow", label: "복도를 좀 더 좁게 만들기" },
+            { id: "q2-art", label: "벽에 천천히 보고 싶은 그림 붙이기" },
+            { id: "q2-plant", label: "화분을 복도에 놓아서 자연스럽게 우회하게 하기" },
+          ],
+        },
+      ],
+      opinionTemplate: "사람의 행동을 바꾸려면 가장 효과적인 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "환경을 바꾸는 것",
+        "규칙을 정하는 것",
+        "왜 그래야 하는지 설명하는 것",
+        "좋은 행동을 쉽게 만드는 것",
+      ],
+    },
   },
+
+  // DD6: mission-fun-vs-safety → 에버랜드 T-Express
   {
     missionId: "mission-fun-vs-safety",
-    title: "재미 vs 안전",
-    category: "value",
-    completedAt: "2024-03-23",
-    choiceSummary: "안전을 선택하되, 스릴을 유지할 방법 제안",
+    title: "실제 놀이공원의 안전 결정",
+    realWorldCase: {
+      headline: "에버랜드 T-Express 안전 점검 운행 중단",
+      context: "에버랜드의 T-Express는 한때 세계에서 가장 가파른 목재 롤러코스터였어. 안전 점검에서 지적사항이 나왔을 때, 한 달간 운행을 중단하고 보수했어. 그 기간 동안 방문객 불만이 쏟아졌지만, 에버랜드는 안전을 선택했어.",
+      keyQuestion: "재미를 포기하고 안전을 선택한 에버랜드의 결정을 어떻게 생각해?",
+      source: "국토교통부 유기시설 안전관리 현황, 2019",
+    },
+    stepTemplates: {
+      caseIntro: "어제 놀이공원에서 재미와 안전 사이에서 고민했잖아? 실제 놀이공원에서도 이런 선택을 해.",
+      questions: [
+        {
+          prompt: "에버랜드가 한 달이나 운행을 멈춘 건 좋은 결정이었을까?",
+          options: [
+            { id: "q1-right", label: "당연히 맞아, 사고가 나면 더 큰일이니까" },
+            { id: "q1-too-long", label: "맞지만 한 달은 너무 길어" },
+            { id: "q1-both", label: "일부만 운행하면서 수리하면 좋았을 텐데" },
+            { id: "q1-hard", label: "어려운 결정이지만 안전이 먼저야" },
+          ],
+        },
+        {
+          prompt: "놀이기구 설계자가 된다면, 재미와 안전 중 어디에 더 신경 쓸 거야?",
+          options: [
+            { id: "q2-safety", label: "안전 60%, 재미 40%" },
+            { id: "q2-fun", label: "재미 60%, 안전 40%" },
+            { id: "q2-equal", label: "정확히 반반" },
+            { id: "q2-creative", label: "안전한데 재미있는 새로운 방법을 찾을 거야" },
+          ],
+        },
+      ],
+      opinionTemplate: "재미와 안전 사이에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "안전이 보장되어야 진짜 재미가 있다는 것",
+        "위험을 완전히 없앨 수는 없다는 것",
+        "재미를 포기하지 않으면서 안전할 수 있다는 것",
+        "결정하는 사람이 책임져야 한다는 것",
+      ],
+    },
   },
+
+  // DD7: mission-one-line → 나이키 Just Do It
   {
     missionId: "mission-one-line",
-    title: "한 줄로 설득하기",
-    category: "synthesis",
-    completedAt: "2024-03-22",
-    choiceSummary: '"거기 가면 시간이 어떻게 가는지 모를 거야"',
+    title: "한 줄이 세상을 바꾼 순간",
+    realWorldCase: {
+      headline: "나이키 'Just Do It' 탄생 비화",
+      context: "1988년, 광고인 댄 위든은 사형수의 마지막 말 'Let's do it'에서 영감을 받아 'Just Do It'을 만들었어. 이 세 단어가 운동화 회사를 세계 최대 스포츠 브랜드로 만들었어. 한 줄의 말이 수십억 달러의 가치를 만든 거야.",
+      keyQuestion: "왜 이 세 단어가 그렇게 강력했을까?",
+      source: "Wieden+Kennedy",
+    },
+    stepTemplates: {
+      caseIntro: "어제 광고 회사에서 한 줄로 사람을 설득하는 연습을 했잖아? 실제로 역사를 바꾼 한 줄들이 있어.",
+      questions: [
+        {
+          prompt: "'Just Do It'이 성공한 가장 큰 이유는?",
+          options: [
+            { id: "q1-short", label: "짧아서 기억하기 쉬우니까" },
+            { id: "q1-feeling", label: "듣는 사람의 감정을 움직이니까" },
+            { id: "q1-anyone", label: "누구에게나 적용되니까" },
+            { id: "q1-action", label: "행동하게 만드니까" },
+          ],
+        },
+        {
+          prompt: "네가 한 줄로 세상을 바꿀 수 있다면, 어떤 메시지를 전할 거야?",
+          options: [],
+          followUpPrompt: "네만의 한 줄을 적어봐",
+        },
+      ],
+      opinionTemplate: "사람의 마음을 움직이는 말에서 가장 중요한 건 ___라고 생각해. 왜냐하면 ___",
+      opinionScaffolds: [
+        "짧고 강렬한 것",
+        "듣는 사람이 자기 이야기라고 느끼게 하는 것",
+        "행동으로 이어지게 하는 것",
+        "진심이 담겨 있는 것",
+      ],
+    },
   },
 ];
 
-// ═══════════════════════════════════════
-// USER PROFILE (서연, 7일 후)
-// ═══════════════════════════════════════
-
-export const SEOYEON_PROFILE: UserProfile = {
-  id: "user-seoyeon",
-  name: "서연",
-  age: 12,
-  createdAt: "2024-03-22",
-  stats: {
-    totalMissions: 7,
-    currentStreak: 7,
-    longestStreak: 7,
-    totalMinutes: 52,
-  },
-  discoveries: {
-    worldPreference: {
-      label: "끌리는 세계",
-      summary: "우주보다 사람들이 사는 마을 이야기에 더 오래 머물러요",
-      dataPoints: 7,
-      confidence: "medium",
-      icon: "🌍",
-    },
-    valueOrientation: {
-      label: "중요하게 여기는 것",
-      summary: "효율보다 공정함을 고르는 경우가 많아요",
-      dataPoints: 5,
-      confidence: "medium",
-      icon: "⚖️",
-    },
-    roleEnergy: {
-      label: "에너지가 생기는 역할",
-      summary: "만드는 역할보다 조율하는 역할에서 몰입도가 높아요",
-      dataPoints: 4,
-      confidence: "low",
-      icon: "⚡",
-    },
-    decisionStyle: {
-      label: "결정하는 방식",
-      summary: "처음 직감으로 고른 뒤 끝까지 밀고 나가는 편이에요",
-      dataPoints: 7,
-      confidence: "medium",
-      icon: "🎯",
-    },
-    tonePreference: {
-      label: "선호하는 분위기",
-      summary: "진지한 톤을 더 자주 택해요. 위트보다는 깊이.",
-      dataPoints: 3,
-      confidence: "low",
-      icon: "🎭",
-    },
-  },
-  interestMap: [
-    { category: "창작 & 표현", score: 82, trend: "up" },
-    { category: "리더십 & 의사결정", score: 70, trend: "stable" },
-    { category: "공감 & 관계", score: 58, trend: "up" },
-    { category: "윤리 & 사회", score: 52, trend: "stable" },
-    { category: "탐구 & 분석", score: 45, trend: "exploring" },
-    { category: "모험 & 상상", score: 68, trend: "up" },
-    { category: "환경 & 지속가능성", score: 35, trend: "exploring" },
-  ],
-};
-
-// ═══════════════════════════════════════
-// HELPERS
-// ═══════════════════════════════════════
-
-export function getMissionById(id: string): Mission | undefined {
-  return MISSIONS.find((m) => m.id === id);
-}
-
-export function getTodayMission(): Mission {
-  return MISSIONS[0]; // 화성 첫 도시의 시장
-}

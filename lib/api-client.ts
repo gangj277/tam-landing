@@ -537,3 +537,110 @@ export async function listReports(childId: string) {
     `/reports/${childId}/list`,
   );
 }
+
+// ─── Activity ───
+
+export type TodayActivityResponse =
+  | { type: "mission"; mission: MissionData; reason: string }
+  | { type: "mission"; status: "sequence"; mission: MissionData; reason: string }
+  | { type: "mission"; status: "choosing"; previews: MissionPreviewData[]; choiceSetId: string }
+  | { type: "mission"; status: "chosen"; mission: MissionData; reason: string }
+  | { type: "deepdive"; deepDive: DeepDiveData; linkedMission: MissionData; reason: string }
+  | { type: "deepdive_pending"; linkedMission: MissionData; reason: string };
+
+export interface DeepDiveStepData {
+  id: string;
+  deepDiveId: string;
+  stepIndex: number;
+  type: "case" | "question" | "opinion" | "portfolio";
+  prompt: string;
+  response: string | null;
+  options?: { id: string; label: string }[];
+  selectedOptionId?: string;
+  createdAt: string;
+}
+
+export interface DeepDiveRealWorldCaseData {
+  headline: string;
+  context: string;
+  keyQuestion: string;
+  source?: string;
+}
+
+export interface DeepDiveData {
+  id: string;
+  missionId: string;
+  sessionId: string | null;
+  childId: string;
+  title: string;
+  realWorldCase: DeepDiveRealWorldCaseData;
+  steps: DeepDiveStepData[];
+  portfolioEntry: string | null;
+  status: "active" | "completed" | "expired";
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+export interface PortfolioEntry {
+  deepDiveId: string;
+  missionId: string;
+  missionTitle: string;
+  title: string;
+  portfolioEntry: string;
+  completedAt: string;
+}
+
+export async function getTodayActivity() {
+  return request<TodayActivityResponse>("/activity/today");
+}
+
+// ─── Deep-Dive ───
+
+export async function createDeepDive(missionId: string) {
+  return request<{ deepDive: DeepDiveData; reused: boolean }>(
+    "/deepdive",
+    { method: "POST", body: JSON.stringify({ missionId }) },
+  );
+}
+
+export async function getDeepDive(id: string) {
+  return request<{ deepDive: DeepDiveData; linkedMission: MissionData | null }>(
+    `/deepdive/${id}`,
+  );
+}
+
+export async function recordDeepDiveStep(
+  deepDiveId: string,
+  stepIndex: number,
+  response?: string,
+  selectedOptionId?: string,
+) {
+  return request<{ ok: true }>(
+    `/deepdive/${deepDiveId}/step`,
+    {
+      method: "POST",
+      body: JSON.stringify({ stepIndex, response, selectedOptionId }),
+    },
+  );
+}
+
+export async function generatePortfolioSentence(deepDiveId: string) {
+  return request<{ deepDiveId: string; portfolioSentence: string }>(
+    "/ai/deepdive-portfolio",
+    { method: "POST", body: JSON.stringify({ deepDiveId }) },
+  );
+}
+
+export async function completeDeepDiveSession(deepDiveId: string, portfolioEntry: string) {
+  return request<{ ok: true }>(
+    `/deepdive/${deepDiveId}/complete`,
+    { method: "PATCH", body: JSON.stringify({ portfolioEntry }) },
+  );
+}
+
+export async function getPortfolio(childId: string) {
+  return request<{ childId: string; entries: PortfolioEntry[] }>(
+    `/portfolio?childId=${childId}`,
+  );
+}

@@ -4,10 +4,11 @@ import { useState, useEffect, useRef } from "react";
 import {
   getFamilyMe,
   getProfile,
+  getPortfolio,
   listSessions,
   ApiError,
 } from "@/lib/api-client";
-import type { ProfileData, PastSessionItem } from "@/lib/api-client";
+import type { ProfileData, PastSessionItem, PortfolioEntry } from "@/lib/api-client";
 import type { MissionCategory } from "@/lib/types";
 import { CATEGORY_META } from "@/lib/types";
 
@@ -294,6 +295,57 @@ interface DiscoveryInsight {
   icon: string;
 }
 
+/* ─── Portfolio SVG Icons ─── */
+
+function PortfolioEntrySVG() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none">
+      <defs>
+        <linearGradient id="portfolioGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#4A5FC1" />
+          <stop offset="100%" stopColor="#7B8FE0" />
+        </linearGradient>
+      </defs>
+      <rect x="5" y="3" width="22" height="26" rx="3" fill="url(#portfolioGrad)" opacity="0.12" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.4" />
+      <rect x="8" y="3" width="19" height="26" rx="2.5" fill="url(#portfolioGrad)" opacity="0.06" />
+      <line x1="8" y1="3" x2="8" y2="29" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.25" />
+      {/* Page lines */}
+      <line x1="12" y1="10" x2="23" y2="10" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.3" strokeLinecap="round" />
+      <line x1="12" y1="14" x2="21" y2="14" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.25" strokeLinecap="round" />
+      <line x1="12" y1="18" x2="23" y2="18" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.3" strokeLinecap="round" />
+      <line x1="12" y1="22" x2="19" y2="22" stroke="#4A5FC1" strokeWidth="0.8" strokeOpacity="0.2" strokeLinecap="round" />
+      {/* Pen */}
+      <path d="M22 20 L26 24 L24.5 25.5 L20.5 21.5 Z" fill="#E8614D" opacity="0.5" />
+      <path d="M20.5 21.5 L19.5 25 L22 23.5 Z" fill="#E8614D" opacity="0.35" />
+    </svg>
+  );
+}
+
+function PortfolioEmptySVG() {
+  return (
+    <svg width="64" height="64" viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="emptyBookGrad" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#4A5FC1" />
+          <stop offset="100%" stopColor="#7B8FE0" />
+        </linearGradient>
+      </defs>
+      <rect x="12" y="8" width="40" height="48" rx="5" fill="url(#emptyBookGrad)" opacity="0.08" stroke="#4A5FC1" strokeWidth="1.2" strokeOpacity="0.25" />
+      <rect x="17" y="8" width="35" height="48" rx="4" fill="url(#emptyBookGrad)" opacity="0.04" />
+      <line x1="17" y1="8" x2="17" y2="56" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.15" />
+      {/* Dotted lines placeholder */}
+      <line x1="24" y1="24" x2="40" y2="24" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.15" strokeDasharray="3 3" strokeLinecap="round" />
+      <line x1="24" y1="30" x2="37" y2="30" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.12" strokeDasharray="3 3" strokeLinecap="round" />
+      <line x1="24" y1="36" x2="40" y2="36" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.15" strokeDasharray="3 3" strokeLinecap="round" />
+      <line x1="24" y1="42" x2="34" y2="42" stroke="#4A5FC1" strokeWidth="1" strokeOpacity="0.1" strokeDasharray="3 3" strokeLinecap="round" />
+      {/* Plus icon */}
+      <circle cx="48" cy="48" r="8" fill="#4A5FC1" opacity="0.1" />
+      <line x1="44" y1="48" x2="52" y2="48" stroke="#4A5FC1" strokeWidth="1.5" strokeOpacity="0.3" strokeLinecap="round" />
+      <line x1="48" y1="44" x2="48" y2="52" stroke="#4A5FC1" strokeWidth="1.5" strokeOpacity="0.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /* ─── Component ─── */
 
 export default function ProfilePage() {
@@ -307,6 +359,8 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [childName, setChildName] = useState("");
   const [sessions, setSessions] = useState<PastSessionItem[]>([]);
+  const [activeTab, setActiveTab] = useState<"discovery" | "portfolio">("discovery");
+  const [portfolioEntries, setPortfolioEntries] = useState<PortfolioEntry[]>([]);
 
   useEffect(() => {
     setMounted(true);
@@ -316,13 +370,15 @@ export default function ProfilePage() {
         const family = await getFamilyMe();
         setChildName(family.activeChild.name);
 
-        const [profileRes, sessionsRes] = await Promise.all([
+        const [profileRes, sessionsRes, portfolioRes] = await Promise.all([
           getProfile(family.activeChildId),
           listSessions(10),
+          getPortfolio(family.activeChildId).catch(() => ({ childId: family.activeChildId, entries: [] })),
         ]);
 
         setProfile(profileRes.profile);
         setSessions(sessionsRes.sessions);
+        setPortfolioEntries(portfolioRes.entries);
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           setError("로그인이 필요해요");
@@ -429,6 +485,45 @@ export default function ProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* ── Tab Switcher ── */}
+      <div
+        className={`flex gap-0 mb-6 ${mounted ? "animate-fade-in-up delay-100" : "opacity-0"}`}
+        style={{ animationFillMode: "both" }}
+      >
+        <button
+          onClick={() => setActiveTab("discovery")}
+          className="flex-1 pb-2.5 text-[14px] font-semibold text-center transition-colors relative"
+          style={{ color: activeTab === "discovery" ? "#E8614D" : "#8A8A9A" }}
+        >
+          발견 기록
+          <span
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all"
+            style={{
+              width: activeTab === "discovery" ? "40px" : "0px",
+              background: "#E8614D",
+            }}
+          />
+        </button>
+        <button
+          onClick={() => setActiveTab("portfolio")}
+          className="flex-1 pb-2.5 text-[14px] font-semibold text-center transition-colors relative"
+          style={{ color: activeTab === "portfolio" ? "#E8614D" : "#8A8A9A" }}
+        >
+          포트폴리오
+          <span
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all"
+            style={{
+              width: activeTab === "portfolio" ? "40px" : "0px",
+              background: "#E8614D",
+            }}
+          />
+        </button>
+      </div>
+
+      {/* ── Discovery Tab Content ── */}
+      {activeTab === "discovery" && (
+      <>
 
       {/* ── Discovery Insights ── */}
       {discoveries.length > 0 && (
@@ -607,6 +702,79 @@ export default function ProfilePage() {
               })}
             </div>
           </div>
+        </div>
+      )}
+
+      </>
+      )}
+
+      {/* ── Portfolio Tab Content ── */}
+      {activeTab === "portfolio" && (
+        <div
+          className={`${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            나의 탐구 포트폴리오
+          </h2>
+
+          {portfolioEntries.length > 0 ? (
+            <>
+              <p className="text-[12px] text-text-muted mb-5">
+                {portfolioEntries.length}개의 기록을 모았어
+              </p>
+
+              <div className="flex flex-col gap-3">
+                {portfolioEntries.map((entry, idx) => (
+                  <div
+                    key={entry.deepDiveId}
+                    className={`bg-card-bg rounded-2xl px-4 py-4 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                    style={{
+                      borderLeft: "3px solid #4A5FC1",
+                      animationDelay: `${100 + idx * 80}ms`,
+                      animationFillMode: "both",
+                    }}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="shrink-0 mt-0.5">
+                        <PortfolioEntrySVG />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-text-muted mb-0.5">
+                          미션: {entry.missionTitle}
+                        </p>
+                        <p className="text-[13px] font-bold text-navy mb-2">
+                          {entry.title}
+                        </p>
+
+                        <div className="h-px bg-border-light mb-2" />
+
+                        <p className="text-[13px] text-text-secondary leading-relaxed italic">
+                          &ldquo;{entry.portfolioEntry}&rdquo;
+                        </p>
+
+                        <p className="text-[10px] text-text-muted mt-2">
+                          {entry.completedAt}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="mt-8 flex flex-col items-center text-center">
+              <div className="mb-4">
+                <PortfolioEmptySVG />
+              </div>
+              <p className="text-[14px] text-text-secondary leading-relaxed">
+                아직 포트폴리오가 없어.
+              </p>
+              <p className="text-[14px] text-text-secondary leading-relaxed">
+                딥다이브를 완료하면 여기에 기록이 쌓여!
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

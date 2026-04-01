@@ -59,8 +59,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isMissionFlow =
-    pathname.includes("/mission/") &&
-    (pathname.includes("/play") || pathname.includes("/mirror"));
+    (pathname.includes("/mission/") &&
+      (pathname.includes("/play") || pathname.includes("/mirror"))) ||
+    pathname.includes("/deepdive/");
 
   return (
     <div className="relative mx-auto w-full max-w-[430px] min-h-dvh bg-bg-cream flex flex-col">

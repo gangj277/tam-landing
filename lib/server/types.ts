@@ -267,6 +267,8 @@ export interface UserProfileSnapshot {
   createdAt: string;
   stats: {
     totalMissions: number;
+    totalDeepDives: number;
+    portfolioEntries: number;
     currentStreak: number;
     longestStreak: number;
     totalMinutes: number;
@@ -332,4 +334,47 @@ export interface AuthTokenPayload extends Record<string, unknown> {
   deviceId: string;
   parentVerified: boolean;
   parentVerifiedAt?: string;
+}
+
+// ─── Deep-Dive Types ───
+
+export type DeepDiveStepType = "case" | "question" | "opinion" | "portfolio";
+
+export interface DeepDiveRealWorldCase {
+  headline: string;
+  context: string;
+  keyQuestion: string;
+  source?: string;
+}
+
+export interface DeepDiveStepOption {
+  id: string;
+  label: string;
+}
+
+export interface DeepDiveStep {
+  id: string;
+  deepDiveId: string;
+  stepIndex: number;
+  type: DeepDiveStepType;
+  prompt: string;
+  response: string | null;
+  options?: DeepDiveStepOption[];
+  selectedOptionId?: string;
+  createdAt: string;
+}
+
+export interface DeepDive {
+  id: string;
+  missionId: string;
+  sessionId: string | null;
+  childId: string;
+  title: string;
+  realWorldCase: DeepDiveRealWorldCase;
+  steps: DeepDiveStep[];
+  portfolioEntry: string | null;
+  status: "active" | "completed" | "expired";
+  startedAt: string;
+  completedAt: string | null;
+  createdAt: string;
 }

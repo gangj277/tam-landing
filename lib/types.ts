@@ -32,60 +32,6 @@ export type ValueTag =
 
 export type ExpansionToolType = "broaden" | "reframe" | "subvert";
 
-// ─── Scenario Chain (Interactive Story Board) ───
-
-export interface EmotionCard {
-  id: string;
-  emoji: string;
-  label: string;
-  valueTags: ValueTag[];
-}
-
-export interface MethodCard {
-  id: string;
-  emoji: string;
-  label: string;
-  valueTags: ValueTag[];
-}
-
-export interface ScenarioCard {
-  narrative: string;
-  newDilemma?: string;
-}
-
-export interface ThinkingToolCard {
-  type: ExpansionToolType;
-  label: string;
-  emoji: string;
-  card: ScenarioCard;
-}
-
-export interface ScenarioRound {
-  id: string;
-  consequence: ScenarioCard;
-  emotionOptions: EmotionCard[];
-  methodOptions: MethodCard[];
-  thinkingTools: ThinkingToolCard[];
-  closingPrompt?: string;
-}
-
-export interface EpilogueScene {
-  title: string;
-  scenes: {
-    text: string;
-    mood: "positive" | "bittersweet" | "hopeful" | "tense";
-  }[];
-  closingLine: string;
-}
-
-export interface ScenarioChain {
-  missionId: string;
-  initialChoiceId: string;
-  rounds: ScenarioRound[];
-  epilogue: EpilogueScene;
-  finalCard: ScenarioCard;
-}
-
 // ─── Data Models ───
 
 export interface Choice {
@@ -127,78 +73,24 @@ export interface Mission {
   ageRange: [number, number];
 }
 
-export interface ConversationMessage {
-  role: "user" | "assistant";
-  content: string;
-  timestamp: string;
-}
+// ─── Deep-Dive Types ───
 
-export interface MirrorObservation {
-  text: string;
-  valueTags: ValueTag[];
-  tone: "neutral" | "encouraging" | "curious";
-}
+export type DeepDiveStepType = "case" | "question" | "opinion" | "portfolio";
 
-export interface MirrorResult {
-  observations: MirrorObservation[];
-  patternNote: string | null;
-  nextSuggestion: {
-    reason: string;
-    categoryHint: MissionCategory;
-  } | null;
-}
-
-export interface MissionSession {
+export interface DeepDiveStepOption {
   id: string;
-  missionId: string;
-  userId: string;
-  startedAt: string;
-  completedAt?: string;
-  choicesMade: {
-    choiceId: string;
-    timestamp: string;
-    reflectionNote?: string;
-  }[];
-  conversation: ConversationMessage[];
-  toolsUsed: {
-    toolType: ExpansionToolType;
-    count: number;
-  }[];
-  mirror?: MirrorResult;
-}
-
-export interface DiscoveryInsight {
   label: string;
-  summary: string;
-  dataPoints: number;
-  confidence: "low" | "medium" | "high";
-  icon: string;
 }
 
-export interface UserProfile {
-  id: string;
-  name: string;
-  age: number;
-  createdAt: string;
-  stats: {
-    totalMissions: number;
-    currentStreak: number;
-    longestStreak: number;
-    totalMinutes: number;
-  };
-  discoveries: {
-    worldPreference: DiscoveryInsight;
-    valueOrientation: DiscoveryInsight;
-    roleEnergy: DiscoveryInsight;
-    decisionStyle: DiscoveryInsight;
-    tonePreference: DiscoveryInsight;
-  };
-  interestMap: {
-    category: string;
-    score: number;
-    trend: "up" | "stable" | "exploring";
-  }[];
-}
+export const DEEP_DIVE_STEP_META: Record<
+  DeepDiveStepType,
+  { label: string; description: string }
+> = {
+  case: { label: "현실 사례", description: "실제 세상에서 일어난 이야기" },
+  question: { label: "핵심 질문", description: "한 걸음 더 깊이 생각해보기" },
+  opinion: { label: "내 의견", description: "내 생각을 정리해보기" },
+  portfolio: { label: "기록", description: "오늘의 탐구를 한 문장으로" },
+};
 
 // ─── Helpers ───
 
