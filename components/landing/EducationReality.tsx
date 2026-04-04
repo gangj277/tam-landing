@@ -340,7 +340,7 @@ export default function EducationReality() {
           }`}
           style={{ transitionDelay: "100ms" }}
         >
-          자기이해, 이제 선택이 아니라{" "}
+          진로탐색과 자기이해, 이제 선택이 아니라{" "}
           <span className="relative inline-block">
             <span className="relative z-10">필수</span>
             <span

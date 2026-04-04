@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTodayActivity } from "@/lib/api-client";
+import { getTodayMission } from "@/lib/api-client";
 
 describe("api-client cache policy", () => {
   afterEach(() => {
@@ -10,7 +10,7 @@ describe("api-client cache policy", () => {
   it("disables browser caching for authenticated GET requests", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({
-        type: "mission",
+        status: "sequence",
         mission: {
           id: "mission-1",
           title: "화성 시장",
@@ -41,10 +41,10 @@ describe("api-client cache policy", () => {
       }),
     );
 
-    await getTodayActivity();
+    await getTodayMission();
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "/api/activity/today",
+      "/api/missions/today",
       expect.objectContaining({
         cache: "no-store",
         credentials: "include",

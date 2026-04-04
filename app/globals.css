@@ -239,3 +239,70 @@ body {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
+
+/* ─── Exploration Path ─── */
+
+@keyframes pathNodeLeft {
+  from { opacity: 0; transform: translateX(-24px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes pathNodeRight {
+  from { opacity: 0; transform: translateX(24px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes nodePopIn {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes pathGrow {
+  from { height: 0; }
+  to { height: 100%; }
+}
+
+@keyframes softPulseRing {
+  0%, 100% { transform: scale(1); opacity: 0.4; }
+  50% { transform: scale(1.35); opacity: 0; }
+}
+
+@keyframes gentleFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes emptyPathDraw {
+  from { stroke-dashoffset: 200; }
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes invitePulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(232, 97, 77, 0.3); }
+  50% { box-shadow: 0 0 20px 6px rgba(232, 97, 77, 0.08); }
+}
+
+.path-node-left {
+  animation: pathNodeLeft 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.path-node-right {
+  animation: pathNodeRight 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.path-node-pop {
+  animation: nodePopIn 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.path-ring-pulse {
+  animation: softPulseRing 2.5s ease-in-out infinite;
+}
+
+.path-gentle-float {
+  animation: gentleFloat 4s ease-in-out infinite;
+}
+
+.path-invite-pulse {
+  animation: invitePulse 3s ease-in-out infinite;
+}

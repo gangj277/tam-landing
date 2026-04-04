@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   return await handleRoute(async () => {
     const auth = await requireAuth(request);
-    const { missionId } = await readJson<{ missionId: string }>(request);
-    return await createDeepDiveSession(auth, { missionId });
+    const { missionId, sessionId } = await readJson<{ missionId: string; sessionId: string }>(request);
+    return await createDeepDiveSession(auth, { missionId, sessionId });
   });
 }

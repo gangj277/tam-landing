@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import TamLogo from "@/components/brand/TamLogo";
 
 export default function HeroSection() {
   const [mounted, setMounted] = useState(false);
@@ -60,17 +62,26 @@ export default function HeroSection() {
       </div>
 
       <div className="relative z-10 max-w-[760px] text-center">
+        <div
+          className={`mb-8 inline-flex items-center gap-4 rounded-full border border-navy/[0.08] bg-white/80 px-4 py-3 shadow-[0_12px_30px_rgba(26,26,46,0.06)] backdrop-blur-sm transition-all duration-700 ${
+            mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
+          }`}
+        >
+          <TamLogo size="lg" />
+          <div className="hidden h-7 w-px bg-border-light sm:block" />
+          <span className="text-[11px] font-semibold tracking-[0.16em] uppercase text-text-muted hidden sm:block">
+            AI 기반 진로탐색 루틴
+          </span>
+        </div>
+
         {/* Vision declaration — the question */}
         <p
           className={`text-[15px] md:text-[17px] leading-[1.7] text-text-secondary font-medium mb-6 tracking-[-0.01em] transition-all duration-700 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
           }`}
+          style={{ transitionDelay: "120ms" }}
         >
-          AI 시대, 가장 중요한 건{" "}
-          <span className="text-text-muted line-through decoration-1">
-            코딩
-          </span>
-          이 아닙니다. 그러면 무엇일까요?
+          아이에게 &lsquo;꿈이 뭐야?&rsquo; 물어보면 뭐라고 하나요?
         </p>
 
         {/* Main headline — the answer */}
@@ -78,7 +89,9 @@ export default function HeroSection() {
           className={`text-[32px] md:text-[48px] lg:text-[56px] font-bold leading-[1.2] tracking-[-0.04em] text-navy mb-7 transition-all duration-700 delay-150 ${
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
+          style={{ transitionDelay: "180ms" }}
         >
+          매일 10분,{" "}
           <span className="relative inline-block">
             자기 자신
             <svg
@@ -97,7 +110,9 @@ export default function HeroSection() {
               />
             </svg>
           </span>
-          을 아는 것입니다.
+          을
+          <br />
+          알아가는 진로탐색
         </h1>
 
         {/* Vision statement */}
@@ -106,9 +121,9 @@ export default function HeroSection() {
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          모든 아이가 자기가 원하는 것을 이해하고,
+          1회성 적성검사 대신, 매일 쌓이는 탐색 루틴.
           <br className="hidden sm:block" />
-          자기만의 정체성으로 살아가는 세상을 만듭니다.
+          아이가 뭘 좋아하고 뭘 잘하는지, 경험을 통해 스스로 알아갑니다.
         </p>
 
         {/* Data anchor — grounding the vision in reality */}
@@ -128,11 +143,11 @@ export default function HeroSection() {
             mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
           }`}
         >
-          <a
-            href="/signup"
+          <Link
+            href="/consultation"
             className="inline-flex items-center gap-2 bg-coral text-white text-[15px] font-semibold px-8 py-3.5 rounded-full hover:bg-coral-hover transition-all duration-300 hover:scale-[1.03] hover:shadow-[0_4px_20px_rgba(232,97,77,0.3)] active:scale-[0.98]"
           >
-            무료로 시작하기
+            상담 신청하기
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
               <path
                 d="M3 8h10M9 4l4 4-4 4"
@@ -142,16 +157,15 @@ export default function HeroSection() {
                 strokeLinejoin="round"
               />
             </svg>
-          </a>
-          <a
-            href="/quiz"
-            className={`block mt-4 text-[13px] font-medium text-text-secondary hover:text-coral transition-colors duration-300 ${
+          </Link>
+          <p
+            className={`block mt-4 text-[13px] font-medium text-text-muted transition-all duration-700 ${
               mounted ? "opacity-100" : "opacity-0"
             }`}
             style={{ transitionDelay: "700ms" }}
           >
-            먼저 1분 무료 진단 해보기 →
-          </a>
+            상담 후 체험 계정이 발급됩니다
+          </p>
         </div>
 
         {/* Source citation */}

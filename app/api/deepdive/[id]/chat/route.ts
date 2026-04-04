@@ -1,6 +1,5 @@
-import { streamDeepDiveTurn, requireAuth } from "@/lib/server/backend";
-import { readJson } from "@/lib/server/utils/http";
-import { errorResponse } from "@/lib/server/utils/http";
+import { streamAgentResponse, requireAuth } from "@/lib/server/backend";
+import { readJson, errorResponse } from "@/lib/server/utils/http";
 
 export async function POST(
   request: Request,
@@ -9,8 +8,10 @@ export async function POST(
   try {
     const auth = await requireAuth(request);
     const { id } = await params;
-    const { turnIndex } = await readJson<{ turnIndex: number }>(request);
-    const stream = await streamDeepDiveTurn(auth, id, turnIndex);
+    const body = await readJson<{ message?: string | null }>(request);
+    const childMessage = body.message ?? null;
+
+    const stream = await streamAgentResponse(auth, id, childMessage);
 
     return new Response(stream, {
       headers: {

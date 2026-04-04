@@ -3,10 +3,10 @@
 import { useInView } from "@/lib/useInView";
 
 const comparisons = [
-  { before: "정해진 콘텐츠를 소비한다", after: "매일 새로운 세계에 직접 들어간다" },
-  { before: "AI가 정답을 알려준다", after: "AI로 가능성을 넓히고, 스스로 고른다" },
-  { before: "결과가 항상 같다", after: "내 선택에 따라 결과가 달라진다" },
-  { before: "끝나면 남는 게 없다", after: "내 선택의 패턴이 쌓여간다" },
+  { before: "1회성 설문지를 작성한다", after: "매일 10분, 다양한 세계를 직접 체험한다" },
+  { before: "6가지 유형으로 분류된다", after: "전문가와 깊이 대화하며 스스로 생각을 확장한다" },
+  { before: "검사 후 변화를 추적할 방법이 없다", after: "아이의 관심과 사고 패턴이 매주 업데이트된다" },
+  { before: "한 장짜리 보고서로 끝난다", after: "부모에게 매주 인사이트 리포트가 전달된다" },
 ];
 
 export default function ReframingSection() {
@@ -78,7 +78,7 @@ export default function ReframingSection() {
             <div className="flex items-center gap-2 mb-6">
               <div className="w-2 h-2 rounded-full bg-text-muted/40" />
               <h3 className="text-[13px] font-semibold tracking-[0.04em] text-text-muted uppercase">
-                지금 아이들의 디지털 경험
+                기존 진로교육
               </h3>
             </div>
             <div className="space-y-4">
@@ -129,7 +129,7 @@ export default function ReframingSection() {
             <div className="flex items-center gap-2 mb-6">
               <div className="w-2 h-2 rounded-full bg-coral" />
               <h3 className="text-[13px] font-semibold tracking-[0.04em] text-coral uppercase">
-                우리가 여는 새로운 경험
+                TAM의 진로탐색
               </h3>
             </div>
             <div className="space-y-4">

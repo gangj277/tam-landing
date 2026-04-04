@@ -20,10 +20,10 @@ import type {
   DifficultyType,
   WeeklyReport,
   UserProfileSnapshot,
-  DeepDiveTurnType,
-  DeepDiveTurn,
   ExpertPersona,
   DeepDiveRealWorldCase,
+  DeepDiveMessage,
+  AgentState,
 } from "../types";
 
 // ═══════════════════════════════════════
@@ -639,123 +639,169 @@ ${mirrorSuggestions.length > 0 ? `\n<최근 미러 제안>\n${mirrorSuggestions.
 }
 
 // ═══════════════════════════════════════
-// 8. DEEP-DIVE TURN
+// 8. DEEP-DIVE — AGENT SYSTEM PROMPT
 // ═══════════════════════════════════════
 
-export function buildDeepDiveTurnPrompt(
-  turn: { turnIndex: number; type: DeepDiveTurnType },
-  expert: ExpertPersona,
-  mission: Mission,
-  session: MissionSession | null,
-  realWorldCase: DeepDiveRealWorldCase,
-  childName: string,
-  childAge: number,
-  previousTurns: DeepDiveTurn[],
-  turnTemplate: Record<string, string>,
-): { systemPrompt: string; userPrompt: string } {
-  const previousTurnRecap = previousTurns
-    .filter((t) => t.expertMessage)
-    .map((t) => {
-      const response = t.selectedOptionId
-        ? `선택: ${t.options?.find((o) => o.id === t.selectedOptionId)?.label ?? t.selectedOptionId}`
-        : t.textResponse
-          ? `답변: "${t.textResponse}"`
-          : "(아직 응답 없음)";
-      return `[Turn ${t.turnIndex}] ${t.type}: ${t.expertMessage?.slice(0, 80)}...\n  아이 ${response}`;
-    })
-    .join("\n");
+export function buildAgentSystemPrompt({
+  expert,
+  child,
+  mission,
+  session,
+  realWorldCase,
+  turnTemplates,
+}: {
+  expert: ExpertPersona;
+  child: { name: string; age: number };
+  mission: { title: string; coreSituation?: string };
+  session: { initialChoice?: string } | null;
+  realWorldCase: {
+    headline: string;
+    context: string;
+    keyQuestion: string;
+    source?: string;
+  };
+  turnTemplates?: Record<string, unknown>;
+}): string {
+  const turnHints = turnTemplates
+    ? Object.entries(turnTemplates)
+        .map(([key, val]) => {
+          if (typeof val === "object" && val !== null) {
+            return `  ${key}: ${Object.values(val as Record<string, string>).join(" / ")}`;
+          }
+          return `  ${key}: ${String(val)}`;
+        })
+        .join("\n")
+    : "(없음)";
 
-  const systemPrompt = `너는 "${expert.name}"이야. ${expert.role}이고 ${expert.organization}에서 일해.
+  return `너는 "${expert.name}"이야. ${expert.role}이고 ${expert.organization}에서 일해.
 
 <페르소나>
 ${expert.personality}
+${expert.personalAnecdote}
 </페르소나>
 
 <미션 연결>
 ${expert.connectionToMission}
+아이 이름: ${child.name} (${child.age}세)
+미션: ${mission.title}
+아이의 미션 선택: ${session?.initialChoice || "아직 없음"}
 </미션 연결>
 
-<절대 규칙>
-1. 반말 사용. 10~14세 한국어. 친근하지만 유치하지 않게.
-2. 너는 실제 전문가야. 아이에게 현실 이야기를 들려주는 형/누나/언니/오빠야.
-3. 한 번에 2~4문장으로 말해. 너무 길면 지루해져.
-4. 아이의 이전 반응을 반영해서 대화를 이어가. "아 그렇게 생각하는구나" 같은 리액션.
-5. 가르치려 하지 마. 같이 생각하는 느낌으로.
-6. 아이의 미션 경험(${mission.title})과 자연스럽게 연결해.
-7. ${expert.personalAnecdote ? `네 개인 경험을 자연스럽게 녹여: ${expert.personalAnecdote}` : ""}
-</절대 규칙>`;
+<시간적 맥락 — 매우 중요>
+아이는 **방금** 이 미션을 마쳤어. 바로 이어진 대화야.
+"어제", "지난번에" 같은 표현을 쓰지 마.
+반드시 "방금", "아까" 또는 "아까 그 미션에서" 식으로 말해.
+예시 O: "방금 해저 탐사대에서 자원을 캐기로 했다며?"
+예시 X: "어제 해저 탐사대 미션을 했다며?"
+</시간적 맥락 — 매우 중요>
 
-  const turnGuidance: Record<DeepDiveTurnType, string> = {
-    arrival: `[Turn 0: 등장] 자기소개를 하면서 아이(${childName})에게 인사해. 미션에서의 경험에 대해 자연스럽게 물어봐. 힌트: ${turnTemplate.hint ?? ""}`,
-    case: `[Turn 1: 사례] 네가 경험한 실제 사례를 들려줘. ${realWorldCase.headline}에 대한 이야기야. 각도: ${turnTemplate.angle ?? ""}. ${turnTemplate.personalStory ? `개인 이야기: ${turnTemplate.personalStory}` : ""}`,
-    question: `[Turn 2: 질문] 아이에게 열린 질문을 던져. ${turnTemplate.theme ?? ""}에 대해 아이가 자유롭게 생각해볼 수 있는 질문이야. 미션 연결: ${turnTemplate.bridgeToMission ?? ""}`,
-    insight: `[Turn 3: 인사이트] 이 대화를 통해 발견한 것을 나눠. 핵심 메시지: ${turnTemplate.coreMessage ?? ""}. 하지만 '정답'처럼 들리면 안 돼. "나는 이렇게 생각하게 됐어"의 느낌으로.`,
-    portfolio: `[Turn 4: 포트폴리오] 이 대화를 한 문장으로 정리해달라고 부탁해. "오늘 나눈 이야기 중에서 가장 기억에 남는 걸 한 줄로 써볼래?" 형태로.`,
-  };
-
-  const userPrompt = `<아이 정보>
-이름: ${childName}, ${childAge}세
-미션: ${mission.title} (${mission.role})
-미션 상황: ${mission.situation}
-${session?.initialChoiceLabel ? `미션에서의 선택: "${session.initialChoiceLabel}"` : ""}
-</아이 정보>
-
-<실제 사례>
+<실제 사례 (present_real_case 사용 시 참고)>
 ${realWorldCase.headline}
 ${realWorldCase.context}
 핵심 질문: ${realWorldCase.keyQuestion}
+출처: ${realWorldCase.source ?? "N/A"}
 </실제 사례>
 
-${previousTurnRecap ? `<이전 대화>\n${previousTurnRecap}\n</이전 대화>\n` : ""}
-${turnGuidance[turn.type]}
+<참고 힌트>
+${turnHints}
+</참고 힌트>
 
-expertMessage 하나를 생성해줘. 순수 텍스트만, JSON 아님.`;
+<너의 목표>
+아이가 미션에서 했던 선택을 실제 세계와 연결하여,
+스스로 자기 생각의 깊이를 발견하게 하는 것.
+정답을 알려주는 게 아니라, "아, 이게 이렇게 복잡한 거구나"를 느끼게 하는 것.
+</너의 목표>
 
-  return { systemPrompt, userPrompt };
+<대화 규칙>
+1. 반말. 10-14세 한국어. 형/누나/언니/오빠 톤.
+2. 한 번에 2-4문장. 짧고 밀도 있게.
+3. 아이의 말을 정확히 받아서 이어가. 무시하지 마.
+4. 아이가 표면적으로 답하면 probe_deeper로 파고들어.
+5. 아이가 모순된 말을 하면 부드럽게 비춰줘 (contradiction).
+6. 아이가 깊은 생각을 하면 save_insight로 기록해.
+7. 가르치지 마. 같이 생각하는 느낌으로.
+8. 실제 사례는 대화 흐름에 맞춰 자연스럽게 present_real_case로 소개.
+</대화 규칙>
+
+<도구 사용법>
+응답 JSON의 toolCalls 배열에 사용할 도구를 포함해.
+
+1. present_real_case — 실제 사례를 소개할 때. 대화 초반~중반에 한 번 반드시 사용.
+2. probe_deeper — 아이의 답변을 더 깊이 탐구할 때.
+   arguments: { "type": "why" | "how" | "what_if" | "contradiction" }
+3. offer_perspective — 전문가 관점/경험을 나눌 때.
+4. save_insight — 아이의 응답에서 **진짜 유의미한 발견**만 기록. 아이에게 보이지 않음.
+   arguments: { "text": "인사이트 내용", "valueTags": ["fairness", "empathy", ...] }
+   사용 가능한 valueTags: fairness, efficiency, safety, adventure, empathy, creativity, independence, community, logic, emotion
+
+   <save_insight 기준 — 매우 중요>
+   아무 응답이나 저장하지 마. 다음 중 하나 이상에 해당할 때만 저장해:
+
+   ✅ 저장해야 하는 경우:
+   - 아이가 자기만의 가치관/판단 기준을 드러냈을 때
+     예: "사람이 먼저야. 나중 일보다 지금 아픈 사람이 우선이야"
+   - 아이가 대화 중에 관점이 바뀌거나 깊어졌을 때
+     예: "처음엔 그냥 똑같이 나누면 된다고 생각했는데, 더 급한 사람이 있으면 달라지네"
+   - 아이가 복잡한 상황의 본질을 스스로 포착했을 때
+     예: "결국 누가 결정하느냐가 문제인 거네"
+   - 아이가 자기 성향/패턴을 인식하는 발언을 했을 때
+     예: "나는 항상 약한 쪽을 먼저 생각하게 되는 것 같아"
+
+   ❌ 저장하면 안 되는 경우:
+   - 단순 동의/감탄: "맞아", "우와", "신기하다"
+   - 전문가 말을 그대로 반복한 경우
+   - 표면적이고 일반적인 대답: "그건 좋은 것 같아"
+   - 질문에 대한 예/아니오 수준의 답
+
+   text에는 아이의 원문을 그대로 쓰지 말고, **아이가 보여준 사고의 본질**을 한 문장으로 정리해.
+   예: 아이가 "사람이 먼저야"라고 했으면 → text: "자원 배분에서 효율보다 인간의 긴급한 필요를 우선시하는 가치관"
+
+   end_conversation 전 최소 2회 사용 필수. 하지만 기준에 맞지 않으면 억지로 만들지 마.
+   대화가 깊어질수록 자연스럽게 인사이트가 나올 거야.
+   </save_insight 기준 — 매우 중요>
+5. end_conversation — 대화를 자연스럽게 마무리. 포트폴리오 작성을 요청하는 멘트 포함.
+
+도구 없이 순수 대화만 해도 됨.
+</도구 사용법>
+
+<end_conversation 기준>
+다음 중 2개 이상 충족 시 마무리:
+- 아이가 초반과 다른 관점을 보여줌
+- 아이가 "정답이 없다"는 걸 스스로 발견함
+- 아이가 자기 가치관을 명확히 표현함
+- 대화가 8턴 이상 진행됨
+- 아이가 짧은 답변을 반복함 (관심 저하)
+최소 6턴, 최대 12턴.
+</end_conversation 기준>`;
 }
 
 // ═══════════════════════════════════════
-// 9. DEEP-DIVE PORTFOLIO
+// 9. DEEP-DIVE — AGENT USER PROMPT (per turn)
 // ═══════════════════════════════════════
 
-export function buildDeepDivePortfolioPrompt(
-  expert: ExpertPersona,
-  mission: Mission,
-  childName: string,
-  turns: DeepDiveTurn[],
-): { systemPrompt: string; userPrompt: string } {
-  const systemPrompt = `너는 아이의 딥다이브 대화를 한 줄 포트폴리오로 요약하는 역할이야.
+export function buildAgentUserPrompt({
+  messages,
+  agentState,
+}: {
+  messages: DeepDiveMessage[];
+  agentState: AgentState;
+}): string {
+  const conversationLines = messages.map((m, i) => {
+    const role = m.role === "expert" ? "expert" : "child";
+    return `[${i}] ${role}: ${m.content}`;
+  });
 
-<규칙>
-1. 아이가 직접 쓴 textResponse가 있으면 그것을 다듬어서 사용해.
-2. 없으면 대화 맥락에서 핵심 발견을 한 줄로 요약해.
-3. 아이의 이름(${childName})을 포함하지 마. 보편적인 문장으로.
-4. 한국어. 20~40자. 아이가 쓴 것처럼 자연스럽게.
-5. 반말 사용.
-</규칙>`;
+  const caseStatus = agentState.casePresentedAtIndex !== null ? "소개됨" : "아직";
+  const insightStatus = `${agentState.insightCount}/2+`;
 
-  const recap = turns
-    .filter((t) => t.expertMessage || t.textResponse || t.selectedOptionId)
-    .map((t) => {
-      const lines: string[] = [];
-      if (t.expertMessage) lines.push(`전문가: ${t.expertMessage.slice(0, 100)}`);
-      if (t.textResponse) lines.push(`아이: "${t.textResponse}"`);
-      if (t.selectedOptionId && t.options) {
-        const opt = t.options.find((o) => o.id === t.selectedOptionId);
-        if (opt) lines.push(`아이 선택: "${opt.label}"`);
-      }
-      return `[Turn ${t.turnIndex}] ${lines.join(" | ")}`;
-    })
-    .join("\n");
+  return `<대화 기록>
+${conversationLines.join("\n")}
+</대화 기록>
 
-  const userPrompt = `<대화 요약>
-전문가: ${expert.name} (${expert.role}, ${expert.organization})
-미션: ${mission.title}
-${recap}
-</대화 요약>
+<에이전트 상태>
+턴: ${agentState.turnCount}/12 | 사례: ${caseStatus} | 인사이트: ${insightStatus}
+</에이전트 상태>
 
-이 대화의 핵심 발견을 한 줄 포트폴리오 문장으로 써줘. 순수 텍스트만, JSON 아님.`;
-
-  return { systemPrompt, userPrompt };
+다음 전문가 메시지를 생성해. 필요하면 도구를 사용해.`;
 }
 

@@ -143,7 +143,7 @@ export default function ResultShowcase() {
           >
             <div className="w-8 h-[1px] bg-coral" />
             <span className="text-[12px] font-semibold tracking-[0.08em] uppercase text-coral">
-              자기 발견
+              부모님이 받는 리포트
             </span>
             <div className="w-8 h-[1px] bg-coral" />
           </div>
@@ -155,9 +155,9 @@ export default function ResultShowcase() {
             }`}
             style={{ transitionDelay: "100ms" }}
           >
-            아이는 선택하고, 고민하고,
+            매주, 시험 점수로는 볼 수 없는
             <br className="hidden md:block" />
-            그 안에서 자기 자신이 보입니다
+            아이의 모습이 보이기 시작합니다
           </h2>
 
           {/* Subtitle */}

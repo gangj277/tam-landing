@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/profile",
-    label: "내 기록",
+    label: "탐색 지도",
     icon: (active: boolean) => {
       const c = active ? "#E8614D" : "#8A8A9A";
       return (
@@ -59,8 +59,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const isMissionFlow =
-    pathname.includes("/mission/") &&
-    (pathname.includes("/play") || pathname.includes("/mirror"));
+    (pathname.includes("/mission/") &&
+      (pathname.includes("/play") || pathname.includes("/mirror") || pathname.includes("/deepdive"))) ||
+    pathname.includes("/deepdive/");
 
   return (
     <div className="relative mx-auto w-full max-w-[430px] min-h-dvh bg-bg-cream flex flex-col">

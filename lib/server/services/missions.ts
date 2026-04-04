@@ -9,7 +9,7 @@ import {
   buildPreviewGenerationPrompts,
 } from "@/lib/server/ai/prompts";
 import {
-  FIRST_14_DAY_SCHEDULE,
+  FIRST_7_DAY_SCHEDULE,
   getAssignedCategoryForSequenceDay,
 } from "@/lib/server/missions/assignment";
 import {
@@ -84,7 +84,7 @@ async function generateNewMission(
 
       if (parsed.choices.length !== 3) continue;
       if (parsed.aiContext.expansionTools.length !== 3) continue;
-      if (parsed.aiContext.followUpAngles.length !== 4) continue;
+      if (parsed.aiContext.followUpAngles.length !== 6) continue;
 
       const validTags = new Set(["fairness", "efficiency", "safety", "adventure", "empathy", "creativity", "independence", "community", "logic", "emotion"]);
       const tagsValid = parsed.choices.every(
@@ -256,7 +256,7 @@ async function getTodayOrTomorrowMission(payload: AuthTokenPayload, dayOffset: n
   let category: MissionCategory | null = null;
   let reason = "";
 
-  if (sequenceDay >= 1 && sequenceDay <= FIRST_14_DAY_SCHEDULE.length) {
+  if (sequenceDay >= 1 && sequenceDay <= FIRST_7_DAY_SCHEDULE.length) {
     category = getAssignedCategoryForSequenceDay(sequenceDay);
     if (category) {
       reason = initialChoiceReason(category);
@@ -297,7 +297,7 @@ async function getTodayOrTomorrowMission(payload: AuthTokenPayload, dayOffset: n
   let mission = chooseMissionByCategory(missionsList, category!, previousAssignments);
 
   if (!mission) {
-    if (env.TAM_AI_MODE === "openrouter" && sequenceDay > FIRST_14_DAY_SCHEDULE.length) {
+    if (env.TAM_AI_MODE === "openrouter" && sequenceDay > FIRST_7_DAY_SCHEDULE.length) {
       const difficultyMap: Record<MissionCategory, DifficultyType> = {
         world: "value-conflict",
         value: "dilemma",
@@ -348,7 +348,7 @@ export async function getDailyChoices(payload: AuthTokenPayload) {
     toKstDateKey(activeChild.createdAt),
   ) + 1;
 
-  if (sequenceDay <= FIRST_14_DAY_SCHEDULE.length) {
+  if (sequenceDay <= FIRST_7_DAY_SCHEDULE.length) {
     const { mission, reason } = await getTodayOrTomorrowMission(payload, 0);
     return { status: "sequence" as const, mission, reason };
   }

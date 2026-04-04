@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getMission,
   createSession,
@@ -15,6 +16,7 @@ import {
   streamThinkingTool,
   generateEpilogue,
   generateMirror,
+  createDeepDive,
   ApiError,
 } from "@/lib/api-client";
 import type {
@@ -23,6 +25,7 @@ import type {
   GeneratedEpilogue,
 } from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
+import { EXPERT_AVAILABLE_MISSION_IDS, HARDCODED_DEEP_DIVES } from "@/lib/dummy-data";
 
 // ─── Decorative SVGs ───
 
@@ -539,6 +542,7 @@ export default function MissionPlayPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
+  const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // ─── Data State ───
@@ -562,6 +566,7 @@ export default function MissionPlayPage({
   const [choiceHistory, setChoiceHistory] = useState<
     { emotionEmoji: string; emotionLabel: string; methodEmoji: string; methodLabel: string }[]
   >([]);
+  const [deepDiveLoading, setDeepDiveLoading] = useState(false);
 
   const categoryColor = mission ? (CATEGORY_META[mission.category as keyof typeof CATEGORY_META]?.color ?? "#4A5FC1") : "#4A5FC1";
   const categoryMeta = mission ? CATEGORY_META[mission.category as keyof typeof CATEGORY_META] : null;
@@ -996,31 +1001,94 @@ export default function MissionPlayPage({
           </div>
         )}
 
-        {/* ═══ Final (Mirror Transition) ═══ */}
-        {phase.type === "final" && (
-          <div className="py-8 page-enter">
-            <NarrativeCard narrative="시장으로서의 첫날이 끝났어.\n\n네가 내린 결정들이 어떤 의미였는지, 거울에서 함께 돌아보자." color={categoryColor} visible={showNarrative} />
-            <div className={`mt-8 text-center space-y-5 transition-all duration-700 ${showNarrative ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: "600ms" }}>
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mx-auto">
-                <circle cx="32" cy="32" r="30" stroke={categoryColor} strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity="0.3" />
-                <circle cx="32" cy="32" r="20" fill={`${categoryColor}10`} />
-                <path d="M24 32l5 5l11-11" stroke={categoryColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <div>
-                <p className="text-[18px] font-bold text-navy tracking-[-0.02em]">오늘의 탐험이 끝났어</p>
-                <p className="text-[14px] text-text-secondary mt-1.5 leading-[1.6]">
-                  네가 내린 {choiceHistory.length + 1}번의 결정이<br />어떤 의미였는지 돌아볼 시간이야
-                </p>
+        {/* ═══ Final (Mirror + Deep Dive Prompt) ═══ */}
+        {phase.type === "final" && (() => {
+          const hasExpert = mission && EXPERT_AVAILABLE_MISSION_IDS.has(mission.id);
+          const expertData = hasExpert
+            ? HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === mission.id)
+            : null;
+
+          async function handleStartDeepDive() {
+            if (!sessionId || !mission || deepDiveLoading) return;
+            setDeepDiveLoading(true);
+            try {
+              const { deepDiveId } = await createDeepDive(mission.id, sessionId);
+              router.push(`/mission/${id}/deepdive?dd=${deepDiveId}`);
+            } catch {
+              setDeepDiveLoading(false);
+            }
+          }
+
+          return (
+            <div className="py-8 page-enter">
+              {/* Completion summary */}
+              <div className={`text-center space-y-4 transition-all duration-700 ${showNarrative ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
+                <svg width="64" height="64" viewBox="0 0 64 64" fill="none" className="mx-auto">
+                  <circle cx="32" cy="32" r="30" stroke={categoryColor} strokeWidth="1.5" strokeDasharray="4 3" strokeOpacity="0.3" />
+                  <circle cx="32" cy="32" r="20" fill={`${categoryColor}10`} />
+                  <path d="M24 32l5 5l11-11" stroke={categoryColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <div>
+                  <p className="text-[18px] font-bold text-navy tracking-[-0.02em]">오늘의 탐험이 끝났어</p>
+                  <p className="text-[14px] text-text-secondary mt-1.5 leading-[1.6]">
+                    네가 내린 {choiceHistory.length + 1}번의 결정이<br />어떤 의미였는지 돌아볼 시간이야
+                  </p>
+                </div>
+                <Link href={`/mission/${id}/mirror`}
+                  className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-bold text-[16px] transition-all tap-highlight active:scale-[0.97]"
+                  style={{ backgroundColor: categoryColor, boxShadow: `0 6px 28px ${categoryColor}30` }}>
+                  오늘의 거울 보러 가기
+                  <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 4.5l4.5 4.5-4.5 4.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </Link>
               </div>
-              <Link href={`/mission/${id}/mirror`}
-                className="inline-flex items-center gap-2 px-8 py-4 rounded-xl text-white font-bold text-[16px] transition-all tap-highlight active:scale-[0.97]"
-                style={{ backgroundColor: categoryColor, boxShadow: `0 6px 28px ${categoryColor}30` }}>
-                오늘의 거울 보러 가기
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M7 4.5l4.5 4.5-4.5 4.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
-              </Link>
+
+              {/* Deep dive prompt — only for missions with a hardcoded expert */}
+              {expertData && (
+                <div className={`mt-10 transition-all duration-700 ${showNarrative ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: "900ms" }}>
+                  <div className="rounded-2xl border-2 p-5 bg-white" style={{ borderColor: `${categoryColor}25` }}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-11 h-11 rounded-full flex items-center justify-center text-white font-bold text-[15px]" style={{ background: `linear-gradient(135deg, ${categoryColor}, ${categoryColor}CC)` }}>
+                        {expertData.expert.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="text-[15px] font-bold text-navy">{expertData.expert.name}</p>
+                        <p className="text-[12px] text-text-secondary">{expertData.expert.role} · {expertData.expert.organization}</p>
+                      </div>
+                    </div>
+                    <p className="text-[14px] text-text-secondary leading-[1.65] mb-4">
+                      방금 네가 경험한 것에 대해 이 분야 전문가와<br />더 깊이 이야기해볼 수 있어. 해볼래?
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={handleStartDeepDive}
+                        disabled={deepDiveLoading}
+                        className="flex-1 py-3.5 rounded-xl text-white font-bold text-[15px] transition-all tap-highlight active:scale-[0.97] disabled:opacity-60"
+                        style={{ backgroundColor: categoryColor, boxShadow: `0 4px 16px ${categoryColor}25` }}>
+                        {deepDiveLoading ? "준비 중..." : "만나볼래!"}
+                      </button>
+                      <button
+                        onClick={() => router.push("/home")}
+                        className="flex-1 py-3.5 rounded-xl font-bold text-[15px] transition-all tap-highlight active:scale-[0.97] border-2 text-text-secondary"
+                        style={{ borderColor: "#E8E6E1" }}>
+                        오늘은 여기까지
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* No expert available — just show home link */}
+              {!expertData && (
+                <div className={`mt-8 text-center transition-all duration-700 ${showNarrative ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`} style={{ transitionDelay: "900ms" }}>
+                  <button onClick={() => router.push("/home")}
+                    className="text-[14px] font-semibold text-text-secondary underline underline-offset-4">
+                    홈으로 돌아가기
+                  </button>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
       </div>
 
 

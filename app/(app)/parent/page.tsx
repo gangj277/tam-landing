@@ -121,6 +121,38 @@ function WorldTagSVG() {
 
 const BAR_COLORS = ["#E8614D", "#4A5FC1", "#D4A853", "#6B8F71", "#7C6FAF", "#E09145", "#5B9EA6"];
 
+/* ─── Discovery Insight Components (from profile → parent) ─── */
+
+const INSIGHT_ICONS: Record<string, { color: string; path: string }> = {
+  "끌리는 세계": { color: "#4A5FC1", path: "M16 3a13 13 0 100 26 13 13 0 000-26zm0 2a11 11 0 110 22 11 11 0 010-22zm-5 9h10m-8-4h6" },
+  "중요하게 여기는 것": { color: "#E8614D", path: "M16 6v20m-9-14h18M7 12l3 6h3l3-6m6 0l3 6h3l3-6" },
+  "에너지가 생기는 역할": { color: "#D4A853", path: "M18 4l-7 13h4l-2 11 9-12h-4.5z" },
+  "결정하는 방식": { color: "#4A5FC1", path: "M16 5a11 11 0 100 22 11 11 0 000-22zm0 4a7 7 0 110 14 7 7 0 010-14zm0 3a4 4 0 100 8 4 4 0 000-8z" },
+  "선호하는 분위기": { color: "#E8614D", path: "M8 10c0-4 4-6 8-6s8 2 8 6v8c0 4-4 10-8 10s-8-6-8-10z" },
+};
+
+const INSIGHT_LABELS: Record<string, string> = {
+  "끌리는 세계": "세계 선호",
+  "중요하게 여기는 것": "가치 방향",
+  "에너지가 생기는 역할": "역할 에너지",
+  "결정하는 방식": "결정 방식",
+  "선호하는 분위기": "분위기 선호",
+};
+
+function ConfidenceLabel({ confidence }: { confidence: string }) {
+  const map: Record<string, { label: string; color: string; bg: string }> = {
+    low: { label: "탐색 중", color: "#8A8A9A", bg: "#F5F3EE" },
+    medium: { label: "윤곽이 보여요", color: "#D4A853", bg: "#FFF8E1" },
+    high: { label: "꽤 확실해요", color: "#4AAF7A", bg: "#E8F5E9" },
+  };
+  const info = map[confidence] ?? map.low;
+  return (
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md" style={{ color: info.color, background: info.bg }}>
+      {info.label}
+    </span>
+  );
+}
+
 /* ─── PIN Entry Screen ─── */
 
 function PinEntryScreen({
@@ -323,6 +355,7 @@ function ParentDashboard() {
   const [childName, setChildName] = useState("");
   const [report, setReport] = useState<WeeklyReportData | null>(null);
   const [profileStats, setProfileStats] = useState<ProfileData["stats"] | null>(null);
+  const [profileData, setProfileData] = useState<ProfileData | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -339,6 +372,7 @@ function ParentDashboard() {
 
         setReport(reportRes.report);
         setProfileStats(profileRes.profile.stats);
+        setProfileData(profileRes.profile);
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
           setError("로그인이 필요해요");
@@ -474,6 +508,107 @@ function ParentDashboard() {
           )}
         </div>
       </div>
+
+      {/* ── Discovery Insights (from profile) ── */}
+      {profileData && profileData.discoveries && (
+        <div
+          className={`mb-6 ${mounted ? "animate-fade-in-up delay-200" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            {childName}의 발견된 특성
+          </h2>
+          <p className="text-[12px] text-text-muted mb-4">
+            탐험을 통해 조금씩 드러나고 있는 모습입니다
+          </p>
+
+          <div className="flex flex-col gap-2.5">
+            {(Object.values(profileData.discoveries) as Array<{ label: string; summary: string; dataPoints: number; confidence: string }>).map((insight, idx) => {
+              const meta = INSIGHT_ICONS[insight.label];
+              const borderColor = meta?.color ?? "#4A5FC1";
+
+              return (
+                <div
+                  key={insight.label}
+                  className={`bg-card-bg rounded-2xl px-4 py-3.5 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                  style={{
+                    borderLeft: `3px solid ${borderColor}`,
+                    animationDelay: `${250 + idx * 80}ms`,
+                    animationFillMode: "both",
+                  }}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-[13px] font-bold text-navy">{insight.label}</p>
+                        <ConfidenceLabel confidence={insight.confidence} />
+                      </div>
+                      <p className="text-[12px] text-text-secondary leading-relaxed">
+                        {insight.summary}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-text-muted shrink-0 mt-0.5 bg-bg-warm px-1.5 py-0.5 rounded">
+                      {insight.dataPoints}회
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Full Interest Map (from profile) ── */}
+      {profileData && profileData.interestMap && profileData.interestMap.length > 0 && (
+        <div
+          className={`mb-6 ${mounted ? "animate-fade-in-up delay-300" : "opacity-0"}`}
+          style={{ animationFillMode: "both" }}
+        >
+          <h2 className="text-[15px] font-bold text-navy mb-1">
+            관심 영역 전체 지도
+          </h2>
+          <p className="text-[12px] text-text-muted mb-4">
+            {childName}이 어떤 분야에 끌리는지 전체 그림입니다
+          </p>
+
+          <div className="bg-card-bg rounded-2xl px-5 py-5 border border-border-light shadow-sm">
+            <div className="flex flex-col gap-5">
+              {profileData.interestMap.map((area: { category: string; score: number; trend: string }, idx: number) => (
+                <div key={area.category}>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[13px] font-semibold text-navy">{area.category}</span>
+                    <div className="flex items-center gap-1.5">
+                      <TrendArrowSVG trend={area.trend} />
+                      <span className="text-[11px] text-text-muted">
+                        {area.trend === "up" ? "상승" : area.trend === "stable" ? "유지" : "탐색 중"}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-3 bg-bg-warm rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full"
+                        style={{
+                          width: barsVisible ? `${area.score}%` : "0%",
+                          background: BAR_COLORS[idx % BAR_COLORS.length],
+                          transition: `width 1s cubic-bezier(0.22, 1, 0.36, 1) ${idx * 150}ms`,
+                          opacity: 0.75,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="text-[13px] font-bold w-10 text-right"
+                      style={{ color: BAR_COLORS[idx % BAR_COLORS.length] }}
+                    >
+                      {area.score}%
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ── Discovered Patterns ── */}
       {report.patterns.length > 0 && (

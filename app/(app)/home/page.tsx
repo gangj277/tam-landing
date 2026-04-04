@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   getFamilyMe,
   getTodayMission as fetchTodayMission,
-  getTodayActivity,
   getTomorrowMission as fetchTomorrowMission,
   chooseTodayMission,
   listSessions,
   getProfile,
+  createDeepDive,
   ApiError,
 } from "@/lib/api-client";
 import type {
@@ -20,6 +21,7 @@ import type {
 } from "@/lib/api-client";
 import { CATEGORY_META } from "@/lib/types";
 import type { MissionCategory } from "@/lib/types";
+import { EXPERT_AVAILABLE_MISSION_IDS, HARDCODED_DEEP_DIVES } from "@/lib/dummy-data";
 
 /* ─── SVG Illustrations ─── */
 
@@ -333,6 +335,9 @@ export default function HomePage() {
   const [tomorrowMission, setTomorrowMission] = useState<MissionData | null>(null);
   const [pastSessions, setPastSessions] = useState<PastSessionItem[]>([]);
   const [choosingIndex, setChoosingIndex] = useState<number | null>(null);
+  const [deepDiveLoading, setDeepDiveLoading] = useState<string | null>(null);
+  const [pastExpanded, setPastExpanded] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
@@ -368,6 +373,17 @@ export default function HomePage() {
 
     loadData();
   }, []);
+
+  async function handleStartDeepDive(missionId: string, sessionId: string) {
+    if (deepDiveLoading) return;
+    setDeepDiveLoading(sessionId);
+    try {
+      const { deepDiveId } = await createDeepDive(missionId, sessionId);
+      router.push(`/mission/${missionId}/deepdive?dd=${deepDiveId}`);
+    } catch {
+      setDeepDiveLoading(null);
+    }
+  }
 
   async function handleChoosePreview(index: number) {
     if (choosingIndex !== null) return;
@@ -625,43 +641,102 @@ export default function HomePage() {
           className={`mb-7 ${mounted ? "animate-fade-in-up delay-400" : "opacity-0"}`}
           style={{ animationFillMode: "both" }}
         >
-          <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest mb-3">
-            완료한 탐험
-          </p>
+          <button
+            onClick={() => setPastExpanded((v) => !v)}
+            className="flex items-center gap-2 mb-3 tap-highlight"
+          >
+            <p className="text-[12px] font-semibold text-text-muted uppercase tracking-widest">
+              완료한 탐험
+            </p>
+            <span className="text-[11px] font-semibold text-text-muted bg-bg-warm px-1.5 py-0.5 rounded-md">
+              {pastSessions.length}
+            </span>
+            <svg
+              width="14" height="14" viewBox="0 0 14 14" fill="none"
+              className="transition-transform duration-300"
+              style={{ transform: pastExpanded ? "rotate(180deg)" : "rotate(0deg)" }}
+            >
+              <path d="M3.5 5.5L7 9L10.5 5.5" stroke="#8A8A9A" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </button>
 
-          <div className="flex flex-col gap-2.5">
+          <div
+            className="flex flex-col gap-2.5 overflow-hidden transition-all duration-400 ease-in-out"
+            style={{
+              maxHeight: pastExpanded ? `${pastSessions.length * 140}px` : "0px",
+              opacity: pastExpanded ? 1 : 0,
+            }}
+          >
             {pastSessions.map((session, idx) => {
               const sessCategoryMeta =
                 CATEGORY_META[session.category as MissionCategory];
+              const hasExpert = EXPERT_AVAILABLE_MISSION_IDS.has(session.missionId);
+              const expertData = hasExpert
+                ? HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === session.missionId)
+                : null;
+              const isLoadingDD = deepDiveLoading === session.sessionId;
+
               return (
                 <div
                   key={session.sessionId}
-                  className={`flex items-center gap-3.5 bg-card-bg rounded-2xl px-4 py-3.5 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
+                  className={`bg-card-bg rounded-2xl px-4 py-3.5 border border-border-light shadow-sm ${mounted ? "animate-fade-in-up" : "opacity-0"}`}
                   style={{
                     animationDelay: `${500 + idx * 80}ms`,
                     animationFillMode: "both",
                   }}
                 >
-                  <CheckSVG color={sessCategoryMeta.color} />
+                  <div className="flex items-center gap-3.5">
+                    <CheckSVG color={sessCategoryMeta.color} />
 
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-semibold text-navy truncate">
-                      {session.missionTitle}
-                    </p>
-                    <p className="text-[12px] text-text-muted truncate">
-                      {session.choiceSummary}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-semibold text-navy truncate">
+                        {session.missionTitle}
+                      </p>
+                      <p className="text-[12px] text-text-muted truncate">
+                        {session.choiceSummary}
+                      </p>
+                    </div>
+
+                    <div className="flex flex-col items-end shrink-0">
+                      <span
+                        className="w-2 h-2 rounded-full mb-1"
+                        style={{ background: sessCategoryMeta.color }}
+                      />
+                      <span className="text-[10px] text-text-muted">
+                        {session.completedAt.slice(5).replace("-", "/")}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="flex flex-col items-end shrink-0">
-                    <span
-                      className="w-2 h-2 rounded-full mb-1"
-                      style={{ background: sessCategoryMeta.color }}
-                    />
-                    <span className="text-[10px] text-text-muted">
-                      {session.completedAt.slice(5).replace("-", "/")}
-                    </span>
-                  </div>
+                  {expertData && (
+                    <button
+                      onClick={() => handleStartDeepDive(session.missionId, session.sessionId)}
+                      disabled={!!deepDiveLoading}
+                      className="mt-2.5 w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-semibold transition-all active:scale-[0.97] disabled:opacity-50"
+                      style={{
+                        background: `${sessCategoryMeta.color}08`,
+                        color: sessCategoryMeta.color,
+                        border: `1px solid ${sessCategoryMeta.color}20`,
+                      }}
+                    >
+                      {isLoadingDD ? (
+                        <>
+                          <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="2" opacity="0.25" />
+                            <path d="M7 1a6 6 0 0 1 6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                          </svg>
+                          연결 중...
+                        </>
+                      ) : (
+                        <>
+                          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                            <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.8 2.8l1.4 1.4M9.8 9.8l1.4 1.4M11.2 2.8l-1.4 1.4M4.2 9.8l-1.4 1.4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+                          </svg>
+                          {expertData.expert.name}과 추가 탐구하기
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
               );
             })}

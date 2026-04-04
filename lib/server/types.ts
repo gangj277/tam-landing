@@ -334,7 +334,7 @@ export interface AuthTokenPayload extends Record<string, unknown> {
   parentVerifiedAt?: string;
 }
 
-// ─── Deep-Dive Types (v2 — shared) ───
+// ─── Deep-Dive Types (shared) ───
 
 export interface DeepDiveRealWorldCase {
   headline: string;
@@ -352,38 +352,61 @@ export interface ExpertPersona {
   personalAnecdote: string;
 }
 
-export type DeepDiveTurnType = "arrival" | "case" | "question" | "insight" | "portfolio";
-export type DeepDiveInteractionType = "reaction" | "comparison" | "text" | "reflection" | "portfolio";
+// ─── Deep-Dive Types (Agent-based) ───
 
-export interface DeepDiveTurnOption {
-  id: string;
-  label: string;
-  valueTags?: string[];
+export type DeepDiveMessageRole = "expert" | "child";
+
+export type AgentToolName =
+  | "present_real_case"
+  | "probe_deeper"
+  | "offer_perspective"
+  | "save_insight"
+  | "end_conversation";
+
+export interface AgentToolCall {
+  name: AgentToolName;
+  arguments?: Record<string, unknown>;
 }
 
-export interface DeepDiveTurn {
+export interface DeepDiveMessage {
   id: string;
   deepDiveId: string;
-  turnIndex: number;
-  type: DeepDiveTurnType;
-  expertMessage: string | null;
-  interactionType: DeepDiveInteractionType;
-  options?: DeepDiveTurnOption[];
-  selectedOptionId?: string;
-  textResponse?: string;
+  messageIndex: number;
+  role: DeepDiveMessageRole;
+  content: string;
+  toolCalls?: AgentToolCall[];
   createdAt: string;
+}
+
+export interface DeepDiveInsight {
+  id: string;
+  deepDiveId: string;
+  text: string;
+  sourceMessageIndex: number;
+  valueTags: string[];
+  createdAt: string;
+}
+
+export interface AgentState {
+  casePresentedAtIndex: number | null;
+  insightCount: number;
+  turnCount: number;
+  endingInitiated: boolean;
+  portfolioRequested: boolean;
 }
 
 export interface DeepDive {
   id: string;
   missionId: string;
-  sessionId: string | null;
+  sessionId: string;
   childId: string;
   expert: ExpertPersona;
   realWorldCase: DeepDiveRealWorldCase;
-  turns: DeepDiveTurn[];
+  messages: DeepDiveMessage[];
+  insights: DeepDiveInsight[];
   portfolioEntry: string | null;
   status: "active" | "completed" | "expired";
+  agentState: AgentState;
   startedAt: string;
   completedAt: string | null;
   createdAt: string;

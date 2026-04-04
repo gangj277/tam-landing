@@ -1,57 +1,41 @@
 import { HARDCODED_DEEP_DIVES } from "@/lib/dummy-data";
 import { callOpenRouterStream } from "@/lib/server/ai/client";
 import {
-  buildDeepDiveTurnPrompt,
-  buildDeepDivePortfolioPrompt,
+  buildAgentSystemPrompt,
+  buildAgentUserPrompt,
 } from "@/lib/server/ai/prompts";
 import {
-  deepDiveExpertMessageSchema,
-  deepDivePortfolioSchema,
+  agentResponseSchema,
 } from "@/lib/server/ai/schemas";
 import { env } from "@/lib/server/env";
 import { generateId } from "@/lib/server/helpers";
 import { withSeededStore } from "@/lib/server/store";
+import type { Store } from "@/lib/server/store";
 import { nowIso } from "@/lib/server/utils/date";
 import { ApiError } from "@/lib/server/utils/http";
 import type {
   AuthTokenPayload,
   DeepDive,
-  DeepDiveTurn,
-  DeepDiveTurnType,
-  DeepDiveInteractionType,
-  DeepDiveTurnOption,
+  DeepDiveMessage,
+  AgentState,
+  AgentToolCall,
 } from "@/lib/server/types";
-
-// ─── Turn structure definition ───
-
-const TURN_DEFINITIONS: {
-  type: DeepDiveTurnType;
-  interactionType: DeepDiveInteractionType;
-  optionsKey?: "turn0" | "turn1" | "turn3";
-}[] = [
-  { type: "arrival",   interactionType: "reaction",   optionsKey: "turn0" },
-  { type: "case",      interactionType: "comparison",  optionsKey: "turn1" },
-  { type: "question",  interactionType: "text" },
-  { type: "insight",   interactionType: "reflection",  optionsKey: "turn3" },
-  { type: "portfolio", interactionType: "portfolio" },
-];
 
 // ─── Create a deep-dive session ───
 
 export async function createDeepDiveSession(
   payload: AuthTokenPayload,
-  { missionId }: { missionId: string },
+  { missionId, sessionId }: { missionId: string; sessionId: string },
 ) {
   const store = await withSeededStore();
   const childId = payload.activeChildId;
 
-  // Find hardcoded expert for this mission
   const hardcoded = HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === missionId);
   if (!hardcoded) {
     throw new ApiError(404, "NO_EXPERT_FOR_MISSION", `No expert data for mission ${missionId}`);
   }
 
-  // Check if there's already an active deep-dive for this mission
+  // Check for existing active deep-dive for this mission
   const existing = await store.listDeepDivesByChild(childId);
   const activeForMission = existing.find(
     (dd) => dd.missionId === missionId && dd.status === "active",
@@ -60,212 +44,43 @@ export async function createDeepDiveSession(
     return { deepDiveId: activeForMission.id, reused: true };
   }
 
-  // Find the most recent completed session for this mission
-  const sessions = await store.listSessionsByChild(childId);
-  const missionSession = sessions
-    .filter((s) => s.missionId === missionId && s.status === "completed")
-    .sort((a, b) => b.completedAt!.localeCompare(a.completedAt!))
-    .at(0);
-
   const deepDiveId = generateId("dd");
   const now = nowIso();
 
-  // Create the deep-dive record
+  const initialAgentState: AgentState = {
+    casePresentedAtIndex: null,
+    insightCount: 0,
+    turnCount: 0,
+    endingInitiated: false,
+    portfolioRequested: false,
+  };
+
   await store.upsertDeepDive({
     id: deepDiveId,
     missionId,
-    sessionId: missionSession?.id ?? null,
+    sessionId,
     childId,
     expert: hardcoded.expert,
     realWorldCase: hardcoded.realWorldCase,
     portfolioEntry: null,
     status: "active",
+    agentState: initialAgentState,
     startedAt: now,
     completedAt: null,
     createdAt: now,
   });
 
-  // Create 5 turn stubs
-  for (let i = 0; i < 5; i++) {
-    const def = TURN_DEFINITIONS[i];
-    let options: DeepDiveTurnOption[] | undefined;
-
-    if (def.optionsKey && hardcoded.interactionOptions[def.optionsKey]) {
-      options = hardcoded.interactionOptions[def.optionsKey].map((opt) => ({
-        id: opt.id,
-        label: opt.label,
-        valueTags: "valueTags" in opt ? (opt as { valueTags: string[] }).valueTags : undefined,
-      }));
-    }
-
-    await store.upsertDeepDiveTurn({
-      id: generateId("ddt"),
-      deepDiveId,
-      turnIndex: i,
-      type: def.type,
-      expertMessage: null,
-      interactionType: def.interactionType,
-      options,
-      selectedOptionId: undefined,
-      textResponse: undefined,
-      createdAt: now,
-    });
-  }
-
   return { deepDiveId, reused: false };
 }
 
-// ─── Stream a deep-dive turn's expert message ───
+// ─── List deep-dives for child ───
 
-export async function streamDeepDiveTurn(
+export async function listDeepDivesByChild(
   payload: AuthTokenPayload,
-  deepDiveId: string,
-  turnIndex: number,
-): Promise<ReadableStream<Uint8Array>> {
-  const store = await withSeededStore();
-  const deepDive = await store.getDeepDive(deepDiveId);
-  if (!deepDive) throw new ApiError(404, "DEEP_DIVE_NOT_FOUND", "Deep dive not found");
-  if (deepDive.childId !== payload.activeChildId) {
-    throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
-  }
-  if (deepDive.status !== "active") {
-    throw new ApiError(409, "DEEP_DIVE_NOT_ACTIVE", "Deep dive is not active");
-  }
-
-  const turn = deepDive.turns.find((t) => t.turnIndex === turnIndex);
-  if (!turn) throw new ApiError(404, "TURN_NOT_FOUND", `Turn ${turnIndex} not found`);
-
-  // If already has expert message, return it as a completed stream
-  if (turn.expertMessage) {
-    return createCompletedStream(turn.expertMessage);
-  }
-
-  const mission = await store.getMission(deepDive.missionId);
-  if (!mission) throw new ApiError(404, "MISSION_NOT_FOUND", "Mission not found");
-
-  const child = await store.getChild(payload.activeChildId);
-  if (!child) throw new ApiError(404, "CHILD_NOT_FOUND", "Child not found");
-
-  // Get the session (may be null)
-  const session = deepDive.sessionId ? await store.getSession(deepDive.sessionId) : null;
-
-  // Get previous turns
-  const previousTurns = deepDive.turns.filter((t) => t.turnIndex < turnIndex);
-
-  // Get turn template from hardcoded data
-  const hardcoded = HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === deepDive.missionId);
-  const turnType = TURN_DEFINITIONS[turnIndex].type;
-  const turnTemplate = hardcoded?.turnTemplates[turnType as keyof typeof hardcoded.turnTemplates] ?? {};
-
-  // Mock mode
-  if (env.TAM_AI_MODE === "mock") {
-    const mockMessages: Record<DeepDiveTurnType, string> = {
-      arrival: `안녕! 나는 ${deepDive.expert.name}이야. ${deepDive.expert.organization}에서 ${deepDive.expert.role}으로 일하고 있어. ${mission.title} 미션 했다며? 어땠어?`,
-      case: `내가 겪은 일 하나 들려줄게. ${deepDive.realWorldCase.headline}. ${deepDive.realWorldCase.context}`,
-      question: `${deepDive.realWorldCase.keyQuestion} 너는 어떻게 생각해?`,
-      insight: `우리 대화하면서 느낀 건데, 정답은 없는 것 같아. 하지만 이렇게 생각해보는 과정 자체가 중요한 거야.`,
-      portfolio: `오늘 나눈 이야기 중에서 가장 기억에 남는 걸 한 줄로 써볼래? 네 생각이 담긴 한 문장이면 돼!`,
-    };
-
-    const mockMessage = mockMessages[turnType];
-
-    // Save the message
-    await store.upsertDeepDiveTurn({
-      ...turn,
-      expertMessage: mockMessage,
-    });
-
-    return createCompletedStream(mockMessage);
-  }
-
-  // Real AI streaming
-  const { systemPrompt, userPrompt } = buildDeepDiveTurnPrompt(
-    { turnIndex, type: turnType },
-    deepDive.expert,
-    mission,
-    session,
-    deepDive.realWorldCase,
-    child.name,
-    child.age,
-    previousTurns,
-    turnTemplate as Record<string, string>,
-  );
-
-  // Use the streaming client, wrapping in JSON for schema compatibility
-  const aiStream = callOpenRouterStream({
-    schema: deepDiveExpertMessageSchema,
-    schemaName: "deep_dive_expert_message",
-    systemPrompt,
-    userPrompt,
-  });
-
-  // Wrap the stream to save the message on completion
-  return wrapStreamWithSave(aiStream, deepDiveId, turnIndex, store, turn);
-}
-
-// ─── Record child's response to a turn ───
-
-export async function recordDeepDiveTurnResponse(
-  payload: AuthTokenPayload,
-  deepDiveId: string,
-  { turnIndex, selectedOptionId, textResponse }: {
-    turnIndex: number;
-    selectedOptionId?: string;
-    textResponse?: string;
-  },
 ) {
   const store = await withSeededStore();
-  const deepDive = await store.getDeepDive(deepDiveId);
-  if (!deepDive) throw new ApiError(404, "DEEP_DIVE_NOT_FOUND", "Deep dive not found");
-  if (deepDive.childId !== payload.activeChildId) {
-    throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
-  }
-  if (deepDive.status !== "active") {
-    throw new ApiError(409, "DEEP_DIVE_NOT_ACTIVE", "Deep dive is not active");
-  }
-
-  const turn = deepDive.turns.find((t) => t.turnIndex === turnIndex);
-  if (!turn) throw new ApiError(404, "TURN_NOT_FOUND", `Turn ${turnIndex} not found`);
-
-  await store.upsertDeepDiveTurn({
-    ...turn,
-    selectedOptionId: selectedOptionId ?? turn.selectedOptionId,
-    textResponse: textResponse ?? turn.textResponse,
-  });
-
-  return { ok: true };
-}
-
-// ─── Complete a deep-dive ───
-
-export async function completeDeepDive(
-  payload: AuthTokenPayload,
-  deepDiveId: string,
-  { portfolioEntry }: { portfolioEntry: string },
-) {
-  const store = await withSeededStore();
-  const deepDive = await store.getDeepDive(deepDiveId);
-  if (!deepDive) throw new ApiError(404, "DEEP_DIVE_NOT_FOUND", "Deep dive not found");
-  if (deepDive.childId !== payload.activeChildId) {
-    throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
-  }
-
-  const now = nowIso();
-  await store.upsertDeepDive({
-    id: deepDive.id,
-    missionId: deepDive.missionId,
-    sessionId: deepDive.sessionId,
-    childId: deepDive.childId,
-    expert: deepDive.expert,
-    realWorldCase: deepDive.realWorldCase,
-    portfolioEntry,
-    status: "completed",
-    startedAt: deepDive.startedAt,
-    completedAt: now,
-    createdAt: deepDive.createdAt,
-  });
-
-  return { ok: true, completedAt: now };
+  const deepDives = await store.listDeepDivesByChild(payload.activeChildId);
+  return { deepDives };
 }
 
 // ─── Get deep-dive detail ───
@@ -281,16 +96,6 @@ export async function getDeepDiveDetail(
     throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
   }
   return { deepDive };
-}
-
-// ─── List deep-dives for child ───
-
-export async function listDeepDivesByChild(
-  payload: AuthTokenPayload,
-) {
-  const store = await withSeededStore();
-  const deepDives = await store.listDeepDivesByChild(payload.activeChildId);
-  return { deepDives };
 }
 
 // ─── Portfolio by child ───
@@ -322,95 +127,214 @@ export async function getPortfolioByChild(
   return { entries };
 }
 
-// ─── Today's activity (mission or deepdive) ───
+// ═══════════════════════════════════════════════════════════════
+// DEEP-DIVE AGENT-BASED FUNCTIONS
+// ═══════════════════════════════════════════════════════════════
 
-export async function getTodayActivity(payload: AuthTokenPayload) {
-  // Import dynamically to avoid circular dependency issues
-  const { getTodayMission } = await import("./missions");
-  const { getDaySchedule, FIRST_14_DAY_SCHEDULE } = await import("@/lib/server/missions/assignment");
-  const { diffDays, toKstDateKey } = await import("@/lib/server/utils/date");
+// ─── Mock responses for agent mode ───
 
+const MOCK_AGENT_RESPONSES: Array<{
+  getMessage: (expert: { name: string }, mission: { title: string }) => string;
+  toolCalls?: AgentToolCall[];
+}> = [
+  {
+    // Turn 0: intro
+    getMessage: (expert, mission) =>
+      `안녕! 나는 ${expert.name}이야. 방금 ${mission.title} 미션 끝냈다며? 어떤 선택을 했어? 진짜 궁금해!`,
+    toolCalls: [],
+  },
+  {
+    // Turn 1: probe
+    getMessage: () => `오 그렇구나! 근데 그 선택 하면서 좀 고민되지 않았어? 다른 쪽도 나름 이유가 있잖아.`,
+    toolCalls: [{ name: "probe_deeper", arguments: { type: "why" } }],
+  },
+  {
+    // Turn 2: present case
+    getMessage: (expert) =>
+      `아 맞다, 나도 비슷한 일 겪은 적 있어. 실제로 이런 일이 있었거든. 들어볼래?`,
+    toolCalls: [{ name: "present_real_case" }],
+  },
+  {
+    // Turn 3: offer perspective + save insight
+    getMessage: () =>
+      `진짜 좋은 생각이다. 나는 현장에서 일하면서 느낀 건데, 정답이 하나만 있는 게 아니더라고.`,
+    toolCalls: [
+      { name: "offer_perspective" },
+      {
+        name: "save_insight",
+        arguments: {
+          text: "아이가 다양한 관점을 인식하기 시작함",
+          valueTags: ["fairness", "empathy"],
+        },
+      },
+    ],
+  },
+  {
+    // Turn 4: deeper probe
+    getMessage: () =>
+      `근데 만약에 상황이 좀 달랐다면? 예를 들어 시간이 훨씬 촉박했다면 같은 선택 했을까?`,
+    toolCalls: [{ name: "probe_deeper", arguments: { type: "what_if" } }],
+  },
+  {
+    // Turn 5: save insight
+    getMessage: () =>
+      `와, 그렇게 생각할 수도 있구나. 나는 그 부분을 놓치고 있었어. 고마워!`,
+    toolCalls: [
+      {
+        name: "save_insight",
+        arguments: {
+          text: "상황 의존적 판단의 중요성을 스스로 발견함",
+          valueTags: ["logic", "independence"],
+        },
+      },
+    ],
+  },
+  {
+    // Turn 6+: end conversation
+    getMessage: () =>
+      `오늘 너랑 대화하면서 나도 많이 배웠어. 마지막으로 오늘 이야기 중에서 가장 기억에 남는 걸 한 줄로 써볼래? 네 생각이 담긴 한 문장이면 돼!`,
+    toolCalls: [{ name: "end_conversation" }],
+  },
+];
+
+// ─── Stream an agent response ───
+
+export async function streamAgentResponse(
+  payload: AuthTokenPayload,
+  deepDiveId: string,
+  childMessage: string | null,
+): Promise<ReadableStream<Uint8Array>> {
   const store = await withSeededStore();
+  const deepDive = await store.getDeepDive(deepDiveId);
+  if (!deepDive) throw new ApiError(404, "DEEP_DIVE_NOT_FOUND", "Deep dive not found");
+  if (deepDive.childId !== payload.activeChildId) {
+    throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
+  }
+  if (deepDive.status !== "active") {
+    throw new ApiError(409, "DEEP_DIVE_NOT_ACTIVE", "Deep dive is not active");
+  }
+
+  const now = nowIso();
+
+  // Save child message if provided
+  if (childMessage !== null) {
+    const nextIndex = deepDive.messages.length;
+    await store.appendDeepDiveMessage({
+      id: generateId("ddm"),
+      deepDiveId,
+      messageIndex: nextIndex,
+      role: "child",
+      content: childMessage,
+      createdAt: now,
+    });
+    // Refresh messages in our local object
+    deepDive.messages.push({
+      id: "pending",
+      deepDiveId,
+      messageIndex: nextIndex,
+      role: "child",
+      content: childMessage,
+      createdAt: now,
+    });
+  }
+
+  // Check turn limits
+  if (deepDive.agentState.turnCount >= 12) {
+    throw new ApiError(409, "MAX_TURNS_REACHED", "Maximum turns reached");
+  }
+
+  // Load context data
+  const mission = await store.getMission(deepDive.missionId);
+  if (!mission) throw new ApiError(404, "MISSION_NOT_FOUND", "Mission not found");
+
   const child = await store.getChild(payload.activeChildId);
   if (!child) throw new ApiError(404, "CHILD_NOT_FOUND", "Child not found");
 
-  // Determine which day of the 14-day schedule we're on
-  const onboardedAt = child.onboardedAt;
-  if (!onboardedAt) {
-    // Not onboarded yet — default to mission
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
+  const session = await store.getSession(deepDive.sessionId);
+
+  // Get turn templates from hardcoded data
+  const hardcoded = HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === deepDive.missionId);
+  const turnTemplates = hardcoded?.turnTemplates;
+
+  // Mock mode
+  if (env.TAM_AI_MODE === "mock") {
+    const mockIdx = Math.min(deepDive.agentState.turnCount, MOCK_AGENT_RESPONSES.length - 1);
+    const mock = MOCK_AGENT_RESPONSES[mockIdx];
+    const mockMessage = mock.getMessage(
+      deepDive.expert,
+      { title: mission.title },
+    );
+
+    const mockToolCalls = mock.toolCalls ?? [];
+
+    // Process tool calls
+    const messageIndex = deepDive.messages.length;
+    await processAgentToolCalls(
+      store,
+      deepDiveId,
+      { ...deepDive.agentState },
+      mockToolCalls,
+      messageIndex,
+    );
+
+    // Save expert message
+    await store.appendDeepDiveMessage({
+      id: generateId("ddm"),
+      deepDiveId,
+      messageIndex,
+      role: "expert",
+      content: mockMessage,
+      toolCalls: mockToolCalls.length > 0 ? mockToolCalls : undefined,
+      createdAt: nowIso(),
+    });
+
+    // Build the enriched complete payload
+    const updatedDD = await store.getDeepDive(deepDiveId);
+    const isEnding = updatedDD?.agentState.endingInitiated ?? false;
+
+    return createAgentCompletedStream(mockMessage, updatedDD?.agentState ?? deepDive.agentState, isEnding);
   }
 
-  const today = toKstDateKey(new Date());
-  const startDate = toKstDateKey(onboardedAt);
-  const sequenceDay = diffDays(today, startDate) + 1;
-
-  // Beyond the 14-day schedule or before day 1 — always mission
-  if (sequenceDay < 1 || sequenceDay > FIRST_14_DAY_SCHEDULE.length) {
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
-  }
-
-  const schedule = getDaySchedule(sequenceDay);
-  if (!schedule || schedule.type !== "deepdive") {
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
-  }
-
-  // It's a deep-dive day! Find the previous mission's expert
-  // Get the most recent completed session for this child
-  const sessions = await store.listSessionsByChild(payload.activeChildId);
-  const completedSessions = sessions
-    .filter((s) => s.status === "completed")
-    .sort((a, b) => (b.completedAt ?? "").localeCompare(a.completedAt ?? ""));
-
-  const lastSession = completedSessions[0];
-  if (!lastSession) {
-    // No completed missions yet — fall back to mission
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
-  }
-
-  const mission = await store.getMission(lastSession.missionId);
-  if (!mission) {
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
-  }
-
-  // Check if expert exists for this mission
-  const hardcoded = HARDCODED_DEEP_DIVES.find((dd) => dd.missionId === lastSession.missionId);
-  if (!hardcoded) {
-    const missionResult = await getTodayMission(payload);
-    return { type: "mission" as const, ...missionResult };
-  }
-
-  // Check if there's already an active deep-dive
-  const existingDeepDives = await store.listDeepDivesByChild(payload.activeChildId);
-  const activeDD = existingDeepDives.find(
-    (dd) => dd.missionId === lastSession.missionId && dd.status === "active",
-  );
-
-  return {
-    type: "deepdive" as const,
-    missionId: lastSession.missionId,
-    missionTitle: mission.title,
-    expert: {
-      name: hardcoded.expert.name,
-      role: hardcoded.expert.role,
-      organization: hardcoded.expert.organization,
+  // Real AI streaming
+  const systemPrompt = buildAgentSystemPrompt({
+    expert: deepDive.expert,
+    child: { name: child.name, age: child.age },
+    mission: {
+      title: mission.title,
+      coreSituation: mission.situation,
     },
-    deepDiveId: activeDD?.id ?? null,
-  };
+    session: session
+      ? { initialChoice: session.initialChoiceLabel ?? undefined }
+      : null,
+    realWorldCase: deepDive.realWorldCase,
+    turnTemplates: turnTemplates as Record<string, unknown> | undefined,
+  });
+
+  const userPrompt = buildAgentUserPrompt({
+    messages: deepDive.messages,
+    agentState: deepDive.agentState,
+  });
+
+  const aiStream = callOpenRouterStream({
+    schema: agentResponseSchema,
+    schemaName: "agent_response",
+    systemPrompt,
+    userPrompt,
+  });
+
+  return wrapAgentStreamWithSave(aiStream, store, deepDiveId, deepDive);
 }
 
-// ─── Helper: create a completed stream from existing message ───
+// ─── Helper: create a completed stream for agent mock mode ───
 
-function createCompletedStream(message: string): ReadableStream<Uint8Array> {
+function createAgentCompletedStream(
+  message: string,
+  agentState: AgentState,
+  isEnding: boolean,
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   return new ReadableStream({
     start(controller) {
-      // Send the message as tokens character by character (batched)
       const CHUNK_SIZE = 5;
       for (let i = 0; i < message.length; i += CHUNK_SIZE) {
         const chunk = message.slice(i, i + CHUNK_SIZE);
@@ -419,26 +343,27 @@ function createCompletedStream(message: string): ReadableStream<Uint8Array> {
         );
       }
       controller.enqueue(
-        encoder.encode(`event: complete\ndata: ${JSON.stringify({ expertMessage: message })}\n\n`),
+        encoder.encode(
+          `event: complete\ndata: ${JSON.stringify({ message, agentState, isEnding })}\n\n`,
+        ),
       );
       controller.close();
     },
   });
 }
 
-// ─── Helper: wrap AI stream to save on completion ───
+// ─── Wrap agent AI stream to process tool calls and save on completion ───
 
-function wrapStreamWithSave(
+function wrapAgentStreamWithSave(
   source: ReadableStream<Uint8Array>,
+  store: Store,
   deepDiveId: string,
-  turnIndex: number,
-  store: Awaited<ReturnType<typeof withSeededStore>>,
-  turn: DeepDiveTurn,
+  deepDive: DeepDive,
 ): ReadableStream<Uint8Array> {
   const reader = source.getReader();
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
-  let fullMessage = "";
+  let foundComplete = false;
 
   return new ReadableStream({
     async pull(controller) {
@@ -448,34 +373,170 @@ function wrapStreamWithSave(
         return;
       }
 
-      // Pass through to client
-      controller.enqueue(value);
-
-      // Parse to extract the complete message
       const text = decoder.decode(value, { stream: true });
       const lines = text.split("\n");
+
+      // We need to intercept `event: complete` and its data line
+      // to process tool calls before re-emitting the enriched event
+      const outputLines: string[] = [];
+
       for (const line of lines) {
-        if (line.startsWith("event: complete")) {
-          // Next data line contains the final message
-        } else if (line.startsWith("data: ")) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            if (data.expertMessage) {
-              fullMessage = data.expertMessage;
-              // Save to store
-              await store.upsertDeepDiveTurn({
-                ...turn,
-                expertMessage: fullMessage,
-              });
-            }
-          } catch {
-            // Not JSON or not relevant
-          }
+        if (line === "event: complete") {
+          foundComplete = true;
+          // Don't emit yet — wait for data line
+          continue;
         }
+
+        if (foundComplete && line.startsWith("data: ")) {
+          // This is the complete event data
+          try {
+            const parsed = JSON.parse(line.slice(6));
+            const agentMessage: string = parsed.message ?? "";
+            const toolCalls: AgentToolCall[] = parsed.toolCalls ?? [];
+
+            // Process tool calls (side effects: save insights, update state)
+            const messageIndex = deepDive.messages.length;
+            await processAgentToolCalls(
+              store,
+              deepDiveId,
+              { ...deepDive.agentState },
+              toolCalls,
+              messageIndex,
+            );
+
+            // Save expert message
+            await store.appendDeepDiveMessage({
+              id: generateId("ddm"),
+              deepDiveId,
+              messageIndex,
+              role: "expert",
+              content: agentMessage,
+              toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+              createdAt: nowIso(),
+            });
+
+            // Fetch updated state
+            const updatedDD = await store.getDeepDive(deepDiveId);
+            const updatedState = updatedDD?.agentState ?? deepDive.agentState;
+            const isEnding = updatedState.endingInitiated;
+
+            // Re-emit enriched complete event
+            const enriched = { message: agentMessage, agentState: updatedState, isEnding };
+            outputLines.push(`event: complete`);
+            outputLines.push(`data: ${JSON.stringify(enriched)}`);
+            outputLines.push("");
+          } catch {
+            // If parsing fails, pass through as-is
+            outputLines.push("event: complete");
+            outputLines.push(line);
+            outputLines.push("");
+          }
+          foundComplete = false;
+          continue;
+        }
+
+        // If we had a pending foundComplete flag but this isn't a data line, flush both
+        if (foundComplete) {
+          outputLines.push("event: complete");
+          outputLines.push(line);
+          foundComplete = false;
+          continue;
+        }
+
+        // Regular lines (tokens, errors, etc.) — pass through
+        outputLines.push(line);
+      }
+
+      if (outputLines.length > 0) {
+        controller.enqueue(encoder.encode(outputLines.join("\n")));
       }
     },
     cancel() {
       reader.cancel();
     },
   });
+}
+
+// ─── Process agent tool calls (side effects) ───
+
+async function processAgentToolCalls(
+  store: Store,
+  deepDiveId: string,
+  agentState: AgentState,
+  toolCalls: AgentToolCall[],
+  messageIndex: number,
+): Promise<void> {
+  for (const tc of toolCalls) {
+    switch (tc.name) {
+      case "present_real_case":
+        agentState.casePresentedAtIndex = messageIndex;
+        break;
+
+      case "save_insight": {
+        const args = tc.arguments as { text?: string; valueTags?: string[] } | undefined;
+        if (args?.text) {
+          await store.appendDeepDiveInsight({
+            id: generateId("ddi"),
+            deepDiveId,
+            text: args.text,
+            sourceMessageIndex: messageIndex,
+            valueTags: args.valueTags ?? [],
+            createdAt: nowIso(),
+          });
+          agentState.insightCount += 1;
+        }
+        break;
+      }
+
+      case "end_conversation":
+        agentState.endingInitiated = true;
+        agentState.portfolioRequested = true;
+        break;
+
+      case "probe_deeper":
+      case "offer_perspective":
+        // These are display-only signals; no server-side state change.
+        break;
+    }
+  }
+
+  // Increment turn count
+  agentState.turnCount += 1;
+
+  // Persist updated agent state
+  await store.updateAgentState(deepDiveId, agentState);
+}
+
+// ─── Submit portfolio entry ───
+
+export async function submitPortfolioEntry(
+  payload: AuthTokenPayload,
+  deepDiveId: string,
+  text: string,
+) {
+  const store = await withSeededStore();
+  const deepDive = await store.getDeepDive(deepDiveId);
+  if (!deepDive) throw new ApiError(404, "DEEP_DIVE_NOT_FOUND", "Deep dive not found");
+  if (deepDive.childId !== payload.activeChildId) {
+    throw new ApiError(403, "FORBIDDEN", "Not your deep dive");
+  }
+
+  const now = nowIso();
+
+  await store.upsertDeepDive({
+    id: deepDive.id,
+    missionId: deepDive.missionId,
+    sessionId: deepDive.sessionId,
+    childId: deepDive.childId,
+    expert: deepDive.expert,
+    realWorldCase: deepDive.realWorldCase,
+    portfolioEntry: text,
+    status: "completed",
+    agentState: deepDive.agentState,
+    startedAt: deepDive.startedAt,
+    completedAt: now,
+    createdAt: deepDive.createdAt,
+  });
+
+  return { ok: true, completedAt: now };
 }

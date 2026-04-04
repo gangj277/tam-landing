@@ -159,31 +159,49 @@ export const weeklyReports = pgTable("weekly_reports", {
   updatedAt: text("updated_at").notNull(),
 });
 
-// ─── Deep-Dive v2 Tables ───
+// ─── Deep-Dive Tables (agent-based) ───
 
 export const deepDives = pgTable("deep_dives", {
   id: text("id").primaryKey(),
   missionId: text("mission_id").notNull(),
-  sessionId: text("session_id"),
+  sessionId: text("session_id").notNull(),
   childId: text("child_id").notNull(),
   expert: jsonb("expert").notNull(),
   realWorldCase: jsonb("real_world_case").notNull(),
   portfolioEntry: text("portfolio_entry"),
-  status: text("status").notNull(),
+  status: text("status").notNull().default("active"),
+  agentState: jsonb("agent_state").notNull(),
   startedAt: text("started_at").notNull(),
   completedAt: text("completed_at"),
   createdAt: text("created_at").notNull(),
 });
 
-export const deepDiveTurns = pgTable("deep_dive_turns", {
+export const deepDiveMessages = pgTable("deep_dive_messages", {
   id: text("id").primaryKey(),
   deepDiveId: text("deep_dive_id").notNull(),
-  turnIndex: integer("turn_index").notNull(),
-  type: text("type").notNull(),
-  expertMessage: text("expert_message"),
-  interactionType: text("interaction_type").notNull(),
-  options: jsonb("options"),
-  selectedOptionId: text("selected_option_id"),
-  textResponse: text("text_response"),
+  messageIndex: integer("message_index").notNull(),
+  role: text("role").notNull(),
+  content: text("content").notNull(),
+  toolCalls: jsonb("tool_calls"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const deepDiveInsights = pgTable("deep_dive_insights", {
+  id: text("id").primaryKey(),
+  deepDiveId: text("deep_dive_id").notNull(),
+  text: text("text").notNull(),
+  sourceMessageIndex: integer("source_message_index").notNull(),
+  valueTags: jsonb("value_tags").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const consultationRequests = pgTable("consultation_requests", {
+  id: text("id").primaryKey(),
+  parentName: text("parent_name").notNull(),
+  phone: text("phone").notNull(),
+  childAge: integer("child_age").notNull(),
+  childGrade: text("child_grade").notNull(),
+  message: text("message"),
+  status: text("status").notNull().default("pending"),
   createdAt: text("created_at").notNull(),
 });
