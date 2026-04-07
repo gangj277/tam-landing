@@ -104,11 +104,13 @@ function LoadingSpinner({ color, text }: { color: string; text: string }) {
 function NarrativeCard({
   narrative,
   newDilemma,
+  reflectionHint,
   color,
   visible,
 }: {
   narrative: string;
   newDilemma?: string;
+  reflectionHint?: string;
   color: string;
   visible: boolean;
 }) {
@@ -145,6 +147,14 @@ function NarrativeCard({
             );
           })}
         </div>
+        {reflectionHint && (
+          <div className="mt-4 flex items-start gap-2">
+            <span className="text-[13px] mt-0.5" style={{ color, opacity: 0.5 }}>?</span>
+            <p className="text-[13px] leading-[1.65] italic" style={{ color: `${color}bb` }}>
+              {reflectionHint}
+            </p>
+          </div>
+        )}
         {newDilemma && (
           <div className="mt-5 pt-4 border-t border-border-light">
             <p className="text-[17px] font-bold text-navy tracking-[-0.02em] leading-[1.5]">
@@ -944,7 +954,7 @@ export default function MissionPlayPage({
             {choiceHistory.map((ch, i) => (
               <ChoiceSummary key={i} emoji={ch.emotionEmoji} emotionLabel={ch.emotionLabel} methodEmoji={ch.methodEmoji} methodLabel={ch.methodLabel} color={categoryColor} />
             ))}
-            <NarrativeCard narrative={currentRound.consequence.narrative} newDilemma={currentRound.consequence.newDilemma} color={categoryColor} visible={showNarrative} />
+            <NarrativeCard narrative={currentRound.consequence.narrative} newDilemma={currentRound.consequence.newDilemma} reflectionHint={currentRound.reflectionHint} color={categoryColor} visible={showNarrative} />
             <ReactionSelector emotionOptions={currentRound.emotionOptions} methodOptions={currentRound.methodOptions}
               selectedEmotion={selectedEmotion} selectedMethod={selectedMethod} onSelectEmotion={setSelectedEmotion} onSelectMethod={setSelectedMethod}
               color={categoryColor} visible={showReaction} />

@@ -242,6 +242,7 @@ export interface GeneratedRound {
   id: string;
   roundIndex: number;
   consequence: { narrative: string; newDilemma: string };
+  reflectionHint?: string;
   emotionOptions: { id: string; emoji: string; label: string; valueTags: string[] }[];
   methodOptions: { id: string; emoji: string; label: string; valueTags: string[] }[];
   thinkingTools: { type: string; label: string; emoji: string }[];

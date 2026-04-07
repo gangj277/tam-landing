@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getAllPosts } from "@/lib/blog";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { NewsletterCTA } from "@/components/blog/NewsletterCTA";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "블로그 | 탐 TAM",
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   alternates: {
-    canonical: "https://tam.kr/blog",
+    canonical: absoluteUrl("/blog"),
   },
 };
 

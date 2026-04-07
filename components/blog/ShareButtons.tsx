@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { absoluteUrl } from "@/lib/site";
 
 export function ShareButtons({ title, slug }: { title: string; slug: string }) {
   const [copied, setCopied] = useState(false);
-  const url = `https://tam.kr/blog/${slug}`;
+  const url = absoluteUrl(`/blog/${slug}`);
 
   function handleCopyLink() {
     navigator.clipboard.writeText(url).then(() => {

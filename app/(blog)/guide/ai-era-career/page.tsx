@@ -11,6 +11,7 @@ import { AiEraParentGuide } from "@/components/guide/ai-era-career/AiEraParentGu
 import { AiEraFAQ } from "@/components/guide/ai-era-career/AiEraFAQ";
 import { AiEraSolution } from "@/components/guide/ai-era-career/AiEraSolution";
 import { AiEraCTA } from "@/components/guide/ai-era-career/AiEraCTA";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "AI 시대 우리 아이 진로 준비 가이드 | 학부모를 위한 정리 — 탐 TAM",
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
     siteName: "탐 TAM",
   },
   alternates: {
-    canonical: "https://tam.kr/guide/ai-era-career",
+    canonical: absoluteUrl("/guide/ai-era-career"),
   },
   robots: {
     index: true,
@@ -106,13 +107,13 @@ function BreadcrumbJsonLd() {
         "@type": "ListItem",
         position: 1,
         name: "홈",
-        item: "https://tam.kr",
+        item: absoluteUrl("/"),
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "가이드",
-        item: "https://tam.kr/guide",
+        item: absoluteUrl("/guide"),
       },
       {
         "@type": "ListItem",
@@ -142,11 +143,11 @@ function ArticleJsonLd() {
     publisher: {
       "@type": "Organization",
       name: "탐 TAM",
-      url: "https://tam.kr",
+      url: SITE_URL,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://tam.kr/guide/ai-era-career",
+      "@id": absoluteUrl("/guide/ai-era-career"),
     },
   };
   return (

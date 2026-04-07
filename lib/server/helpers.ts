@@ -71,7 +71,7 @@ export function confidenceFor(dataPoints: number): ConfidenceLevel {
   return "low";
 }
 
-export function topValueTags(reactions: SessionReaction[], mission: Mission, session: MissionSession): ValueTag[] {
+export function topValueTags(reactions: SessionReaction[], mission: Mission, session: MissionSession, deepDiveInsightTags: ValueTag[] = []): ValueTag[] {
   const counts = new Map<ValueTag, number>();
   const initialChoice = mission.choices.find((choice) => choice.id === session.initialChoiceId);
   for (const tag of initialChoice?.valueTags ?? []) {
@@ -82,6 +82,9 @@ export function topValueTags(reactions: SessionReaction[], mission: Mission, ses
       counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }
   }
+  for (const tag of deepDiveInsightTags) {
+    counts.set(tag, (counts.get(tag) ?? 0) + 1);
+  }
   return [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 2)
@@ -89,9 +92,10 @@ export function topValueTags(reactions: SessionReaction[], mission: Mission, ses
 }
 
 export function roleBucket(role: string) {
-  if (role.includes("리더") || role.includes("시장") || role.includes("책임자")) return "리더십";
-  if (role.includes("디자이너") || role.includes("크리에이티브")) return "창작";
-  if (role.includes("중재") || role.includes("공감") || role.includes("조율")) return "조율";
+  if (role.includes("리더") || role.includes("시장") || role.includes("책임자") || role.includes("대장")) return "리더십";
+  if (role.includes("디자이너") || role.includes("크리에이티브") || role.includes("큐레이터") || role.includes("기획")) return "창작";
+  if (role.includes("중재") || role.includes("공감") || role.includes("조율") || role.includes("조정") || role.includes("탐정")) return "조율";
+  if (role.includes("심사") || role.includes("연구") || role.includes("분석")) return "분석";
   return "관찰";
 }
 

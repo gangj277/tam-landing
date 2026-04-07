@@ -1,8 +1,10 @@
 import type {
+  AgentState,
   ChildProfile,
   DailyChoiceSet,
   DeepDive,
-  DeepDiveTurn,
+  DeepDiveInsight,
+  DeepDiveMessage,
   ExpansionToolType,
   FamilyAccount,
   FamilyDevice,
@@ -71,13 +73,15 @@ export type Store = {
   getChoiceSet: (childId: string, choiceDate: string) => Promise<DailyChoiceSet | null>;
   listChoiceSetsByChild: (childId: string) => Promise<DailyChoiceSet[]>;
   upsertChoiceSet: (choiceSet: DailyChoiceSet) => Promise<void>;
-  // Deep-dive v2
+  // Deep-dive (agent-based)
   getDeepDive: (deepDiveId: string) => Promise<DeepDive | null>;
   listDeepDivesByChild: (childId: string) => Promise<DeepDive[]>;
-  upsertDeepDive: (deepDive: Omit<DeepDive, "turns">) => Promise<void>;
-  getDeepDiveTurn: (deepDiveId: string, turnIndex: number) => Promise<DeepDiveTurn | null>;
-  listDeepDiveTurns: (deepDiveId: string) => Promise<DeepDiveTurn[]>;
-  upsertDeepDiveTurn: (turn: DeepDiveTurn) => Promise<void>;
+  upsertDeepDive: (dd: Omit<DeepDive, "messages" | "insights">) => Promise<void>;
+  appendDeepDiveMessage: (msg: DeepDiveMessage) => Promise<void>;
+  listDeepDiveMessages: (deepDiveId: string) => Promise<DeepDiveMessage[]>;
+  appendDeepDiveInsight: (insight: DeepDiveInsight) => Promise<void>;
+  listDeepDiveInsights: (deepDiveId: string) => Promise<DeepDiveInsight[]>;
+  updateAgentState: (deepDiveId: string, state: AgentState) => Promise<void>;
 };
 
 export type MemoryState = {
@@ -97,6 +101,8 @@ export type MemoryState = {
   profiles: Map<string, UserProfileSnapshot>;
   reports: Map<string, WeeklyReport>;
   choiceSets: Map<string, DailyChoiceSet>;
-  deepDives: Map<string, Omit<DeepDive, "turns">>;
-  deepDiveTurns: Map<string, DeepDiveTurn>;
+  // agent-based deep-dives
+  deepDives: Map<string, Omit<DeepDive, "messages" | "insights">>;
+  deepDiveMessages: Map<string, DeepDiveMessage>;
+  deepDiveInsights: Map<string, DeepDiveInsight>;
 };

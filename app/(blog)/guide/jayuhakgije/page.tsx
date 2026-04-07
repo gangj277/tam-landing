@@ -9,6 +9,7 @@ import { JayuLimitations } from "@/components/guide/jayuhakgije/JayuLimitations"
 import { JayuParentGuide } from "@/components/guide/jayuhakgije/JayuParentGuide";
 import { JayuFAQ } from "@/components/guide/jayuhakgije/JayuFAQ";
 import { JayuCTA } from "@/components/guide/jayuhakgije/JayuCTA";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "자유학기제 완벽 가이드 2025 | 학부모를 위한 정리 — 탐 TAM",
@@ -35,7 +36,7 @@ export const metadata: Metadata = {
     siteName: "탐 TAM",
   },
   alternates: {
-    canonical: "https://tam.kr/guide/jayuhakgije",
+    canonical: absoluteUrl("/guide/jayuhakgije"),
   },
   robots: {
     index: true,
@@ -108,13 +109,13 @@ function BreadcrumbJsonLd() {
         "@type": "ListItem",
         position: 1,
         name: "홈",
-        item: "https://tam.kr",
+        item: absoluteUrl("/"),
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "가이드",
-        item: "https://tam.kr/guide",
+        item: absoluteUrl("/guide"),
       },
       {
         "@type": "ListItem",
@@ -144,11 +145,11 @@ function ArticleJsonLd() {
     publisher: {
       "@type": "Organization",
       name: "탐 TAM",
-      url: "https://tam.kr",
+      url: SITE_URL,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://tam.kr/guide/jayuhakgije",
+      "@id": absoluteUrl("/guide/jayuhakgije"),
     },
   };
   return (

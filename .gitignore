@@ -46,3 +46,12 @@ screenshots/
 
 # presentation decks
 docs/decks/
+
+# playwright MCP logs
+.playwright-mcp/
+
+# generated output (images, playwright artifacts)
+/output/
+
+# temp assets
+handwritten-note-frame0.png

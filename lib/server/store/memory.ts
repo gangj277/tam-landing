@@ -1,5 +1,5 @@
 import { seededMissions } from "@/lib/server/constants";
-import type { DeepDive } from "@/lib/server/types";
+import type { AgentState, DeepDive, DeepDiveInsight, DeepDiveMessage } from "@/lib/server/types";
 import type { MemoryState, Store } from "./types";
 
 declare global {
@@ -26,7 +26,8 @@ function getMemoryState(): MemoryState {
       reports: new Map(),
       choiceSets: new Map(),
       deepDives: new Map(),
-      deepDiveTurns: new Map(),
+      deepDiveMessages: new Map(),
+      deepDiveInsights: new Map(),
     };
   }
 
@@ -178,37 +179,59 @@ export function createMemoryStore(): Store {
     async upsertChoiceSet(choiceSet) {
       state.choiceSets.set(choiceSet.id, choiceSet);
     },
-    // Deep-dive v2
-    async getDeepDive(deepDiveId) {
+
+    // ─── Deep-dive (agent-based) ───
+
+    async getDeepDive(deepDiveId: string): Promise<DeepDive | null> {
       const dd = state.deepDives.get(deepDiveId);
       if (!dd) return null;
-      const turns = [...state.deepDiveTurns.values()]
-        .filter((t) => t.deepDiveId === deepDiveId)
-        .sort((a, b) => a.turnIndex - b.turnIndex);
-      return { ...dd, turns } as DeepDive;
+      const messages = await this.listDeepDiveMessages(deepDiveId);
+      const insights = await this.listDeepDiveInsights(deepDiveId);
+      return { ...dd, messages, insights } as DeepDive;
     },
-    async listDeepDivesByChild(childId) {
+
+    async listDeepDivesByChild(childId: string): Promise<DeepDive[]> {
       const dds = [...state.deepDives.values()].filter((dd) => dd.childId === childId);
-      return dds.map((dd) => {
-        const turns = [...state.deepDiveTurns.values()]
-          .filter((t) => t.deepDiveId === dd.id)
-          .sort((a, b) => a.turnIndex - b.turnIndex);
-        return { ...dd, turns } as DeepDive;
-      });
+      const results: DeepDive[] = [];
+      for (const dd of dds) {
+        const messages = await this.listDeepDiveMessages(dd.id);
+        const insights = await this.listDeepDiveInsights(dd.id);
+        results.push({ ...dd, messages, insights } as DeepDive);
+      }
+      return results;
     },
-    async upsertDeepDive(deepDive) {
-      state.deepDives.set(deepDive.id, deepDive);
+
+    async upsertDeepDive(dd: Omit<DeepDive, "messages" | "insights">) {
+      state.deepDives.set(dd.id, dd);
     },
-    async getDeepDiveTurn(deepDiveId, turnIndex) {
-      return state.deepDiveTurns.get(`${deepDiveId}:${turnIndex}`) ?? null;
+
+    async appendDeepDiveMessage(msg: DeepDiveMessage) {
+      state.deepDiveMessages.set(`${msg.deepDiveId}:${msg.messageIndex}`, msg);
     },
-    async listDeepDiveTurns(deepDiveId) {
-      return [...state.deepDiveTurns.values()]
-        .filter((t) => t.deepDiveId === deepDiveId)
-        .sort((a, b) => a.turnIndex - b.turnIndex);
+
+    async listDeepDiveMessages(deepDiveId: string): Promise<DeepDiveMessage[]> {
+      const msgs: DeepDiveMessage[] = [];
+      for (const [key, msg] of state.deepDiveMessages) {
+        if (key.startsWith(`${deepDiveId}:`)) msgs.push(msg);
+      }
+      return msgs.sort((a, b) => a.messageIndex - b.messageIndex);
     },
-    async upsertDeepDiveTurn(turn) {
-      state.deepDiveTurns.set(`${turn.deepDiveId}:${turn.turnIndex}`, turn);
+
+    async appendDeepDiveInsight(insight: DeepDiveInsight) {
+      state.deepDiveInsights.set(insight.id, insight);
+    },
+
+    async listDeepDiveInsights(deepDiveId: string): Promise<DeepDiveInsight[]> {
+      const insights: DeepDiveInsight[] = [];
+      for (const insight of state.deepDiveInsights.values()) {
+        if (insight.deepDiveId === deepDiveId) insights.push(insight);
+      }
+      return insights;
+    },
+
+    async updateAgentState(deepDiveId: string, agentState: AgentState) {
+      const dd = state.deepDives.get(deepDiveId);
+      if (dd) state.deepDives.set(deepDiveId, { ...dd, agentState });
     },
   };
 }

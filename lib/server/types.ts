@@ -153,6 +153,7 @@ export interface GeneratedScenarioRound {
     narrative: string;
     newDilemma: string;
   };
+  reflectionHint: string;
   emotionOptions: EmotionOption[];
   methodOptions: MethodOption[];
   thinkingTools: {

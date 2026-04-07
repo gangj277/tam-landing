@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "학부모 가이드 | 탐 TAM",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
     type: "website",
   },
   alternates: {
-    canonical: "https://tam.kr/guide",
+    canonical: absoluteUrl("/guide"),
   },
 };
 
@@ -104,6 +105,36 @@ const guides = [
           strokeWidth="1.5"
           strokeLinecap="round"
         />
+      </svg>
+    ),
+  },
+  {
+    slug: "ai-digital-textbook",
+    title: "AI 디지털교과서 학부모 가이드",
+    description:
+      "활용률 8.1%, 학부모 68.3%가 과의존 우려. 1조 4천억원이 투입된 AI 디지털교과서의 실체와 학부모 대응법.",
+    readingTime: 15,
+    category: "AI와 교육",
+    color: "indigo" as const,
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <rect
+          x="4"
+          y="3"
+          width="16"
+          height="18"
+          rx="2"
+          stroke="currentColor"
+          strokeWidth="1.5"
+        />
+        <circle cx="12" cy="11" r="2.5" stroke="currentColor" strokeWidth="1.5" />
+        <path
+          d="M8 17C8 15.34 9.79 14 12 14C14.21 14 16 15.34 16 17"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+        <path d="M8 7H16" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       </svg>
     ),
   },

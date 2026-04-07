@@ -5,6 +5,7 @@ export const scenarioRoundSchema = z.object({
     narrative: z.string(),
     newDilemma: z.string(),
   }),
+  reflectionHint: z.string().describe("메타인지 자극 질문 1줄 — 아이가 자기 사고 과정을 돌아보게 만드는 부드러운 질문"),
   emotionOptions: z.array(
     z.object({
       id: z.string(),
@@ -115,11 +116,21 @@ export const generatedMissionSchema = z.object({
   ageRange: z.tuple([z.number(), z.number()]),
 });
 
-// Deep-dive: expert message is plain text wrapped in JSON for streaming compatibility
-export const deepDiveExpertMessageSchema = z.object({
-  expertMessage: z.string(),
-});
-
-export const deepDivePortfolioSchema = z.object({
-  portfolioEntry: z.string(),
+// Deep-dive: agent response with optional tool calls
+export const agentResponseSchema = z.object({
+  message: z.string(),
+  toolCalls: z
+    .array(
+      z.object({
+        name: z.enum([
+          "present_real_case",
+          "probe_deeper",
+          "offer_perspective",
+          "save_insight",
+          "end_conversation",
+        ]),
+        arguments: z.record(z.string(), z.unknown()).optional(),
+      }),
+    )
+    .optional(),
 });

@@ -1,11 +1,12 @@
 import type { MetadataRoute } from "next";
 import { getAllPosts } from "@/lib/blog";
+import { absoluteUrl } from "@/lib/site";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const posts = await getAllPosts();
 
   const blogEntries = posts.map((post) => ({
-    url: `https://tam.kr/blog/${post.slug}`,
+    url: absoluteUrl(`/blog/${post.slug}`),
     lastModified: new Date(post.updatedAt),
     changeFrequency: "weekly" as const,
     priority: 0.8,
@@ -13,43 +14,43 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   return [
     {
-      url: "https://tam.kr",
+      url: absoluteUrl("/"),
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 1,
     },
     {
-      url: "https://tam.kr/blog",
+      url: absoluteUrl("/blog"),
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: "https://tam.kr/guide",
+      url: absoluteUrl("/guide"),
       lastModified: new Date(),
       changeFrequency: "weekly",
       priority: 0.9,
     },
     {
-      url: "https://tam.kr/guide/gogyohakjeomje",
+      url: absoluteUrl("/guide/gogyohakjeomje"),
       lastModified: new Date("2026-03-31"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: "https://tam.kr/guide/jayuhakgije",
+      url: absoluteUrl("/guide/jayuhakgije"),
       lastModified: new Date("2026-03-31"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: "https://tam.kr/guide/ai-era-career",
+      url: absoluteUrl("/guide/ai-era-career"),
       lastModified: new Date("2026-03-31"),
       changeFrequency: "monthly",
       priority: 0.9,
     },
     {
-      url: "https://tam.kr/guide/elementary-career-exploration",
+      url: absoluteUrl("/guide/elementary-career-exploration"),
       lastModified: new Date("2026-03-31"),
       changeFrequency: "monthly",
       priority: 0.9,

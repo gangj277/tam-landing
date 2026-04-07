@@ -10,6 +10,7 @@ import { ElemPerceptionGap } from "@/components/guide/elementary/ElemPerceptionG
 import { ElemActionGuide } from "@/components/guide/elementary/ElemActionGuide";
 import { ElemFAQ } from "@/components/guide/elementary/ElemFAQ";
 import { ElemCTA } from "@/components/guide/elementary/ElemCTA";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "초등 고학년 진로탐색 시작 가이드 | 학부모를 위한 정리 — 탐 TAM",
@@ -36,7 +37,7 @@ export const metadata: Metadata = {
     siteName: "탐 TAM",
   },
   alternates: {
-    canonical: "https://tam.kr/guide/elementary-career-exploration",
+    canonical: absoluteUrl("/guide/elementary-career-exploration"),
   },
   robots: {
     index: true,
@@ -109,13 +110,13 @@ function BreadcrumbJsonLd() {
         "@type": "ListItem",
         position: 1,
         name: "홈",
-        item: "https://tam.kr",
+        item: absoluteUrl("/"),
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "가이드",
-        item: "https://tam.kr/guide",
+        item: absoluteUrl("/guide"),
       },
       {
         "@type": "ListItem",
@@ -145,11 +146,11 @@ function ArticleJsonLd() {
     publisher: {
       "@type": "Organization",
       name: "탐 TAM",
-      url: "https://tam.kr",
+      url: SITE_URL,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": "https://tam.kr/guide/elementary-career-exploration",
+      "@id": absoluteUrl("/guide/elementary-career-exploration"),
     },
   };
   return (

@@ -8,6 +8,7 @@ import { RelatedPosts } from "@/components/blog/RelatedPosts";
 import { ReadingProgress } from "@/components/blog/ReadingProgress";
 import { TableOfContents } from "@/components/blog/TableOfContents";
 import { BackToTop } from "@/components/blog/BackToTop";
+import { SITE_URL, absoluteUrl } from "@/lib/site";
 
 export async function generateStaticParams() {
   return getAllSlugs().map((slug) => ({ slug }));
@@ -44,7 +45,7 @@ export async function generateMetadata({
       siteName: "탐 TAM",
     },
     alternates: {
-      canonical: `https://tam.kr/blog/${post.slug}`,
+      canonical: absoluteUrl(`/blog/${post.slug}`),
     },
     robots: {
       index: true,
@@ -70,11 +71,11 @@ function ArticleJsonLd({ post }: { post: BlogPostMeta }) {
     publisher: {
       "@type": "Organization",
       name: "탐 TAM",
-      url: "https://tam.kr",
+      url: SITE_URL,
     },
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `https://tam.kr/blog/${post.slug}`,
+      "@id": absoluteUrl(`/blog/${post.slug}`),
     },
   };
 
@@ -118,13 +119,13 @@ function BreadcrumbJsonLd({ post }: { post: BlogPostMeta }) {
         "@type": "ListItem",
         position: 1,
         name: "홈",
-        item: "https://tam.kr",
+        item: absoluteUrl("/"),
       },
       {
         "@type": "ListItem",
         position: 2,
         name: "블로그",
-        item: "https://tam.kr/blog",
+        item: absoluteUrl("/blog"),
       },
       {
         "@type": "ListItem",

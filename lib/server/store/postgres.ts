@@ -4,8 +4,9 @@ import { seededMissions } from "@/lib/server/constants";
 import { createDb } from "@/lib/server/db/client";
 import {
   children,
+  deepDiveInsights,
+  deepDiveMessages,
   deepDives,
-  deepDiveTurns,
   families,
   familyDevices,
   missionAssignments,
@@ -22,13 +23,12 @@ import {
   dailyChoiceSets,
 } from "@/lib/server/db/schema";
 import type {
+  AgentState,
   ChildProfile,
   DailyChoiceSet,
   DeepDive,
-  DeepDiveTurn,
-  DeepDiveTurnOption,
-  ExpertPersona,
-  DeepDiveRealWorldCase,
+  DeepDiveInsight,
+  DeepDiveMessage,
   ExpansionToolType,
   GeneratedEpilogue,
   GeneratedScenarioRound,
@@ -418,158 +418,146 @@ export function createPostgresStore(): Store {
         },
       });
     },
-    // Deep-dive v2
-    async getDeepDive(deepDiveId) {
+    // ─── Deep-dive (agent-based) — Postgres-backed ───
+
+    async getDeepDive(deepDiveId: string): Promise<DeepDive | null> {
       const row = await db.query.deepDives.findFirst({
         where: eq(deepDives.id, deepDiveId),
       });
       if (!row) return null;
-      const turnRows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, deepDiveId));
-      const turns: DeepDiveTurn[] = turnRows
-        .map((t) => ({
-          id: t.id,
-          deepDiveId: t.deepDiveId,
-          turnIndex: t.turnIndex,
-          type: t.type as DeepDiveTurn["type"],
-          expertMessage: t.expertMessage,
-          interactionType: t.interactionType as DeepDiveTurn["interactionType"],
-          options: t.options as DeepDiveTurnOption[] | undefined,
-          selectedOptionId: t.selectedOptionId ?? undefined,
-          textResponse: t.textResponse ?? undefined,
-          createdAt: t.createdAt,
-        }))
-        .sort((a, b) => a.turnIndex - b.turnIndex);
+      const messages = await this.listDeepDiveMessages(deepDiveId);
+      const insights = await this.listDeepDiveInsights(deepDiveId);
       return {
         id: row.id,
         missionId: row.missionId,
         sessionId: row.sessionId,
         childId: row.childId,
-        expert: row.expert as ExpertPersona,
-        realWorldCase: row.realWorldCase as DeepDiveRealWorldCase,
-        turns,
+        expert: row.expert as DeepDive["expert"],
+        realWorldCase: row.realWorldCase as DeepDive["realWorldCase"],
         portfolioEntry: row.portfolioEntry,
         status: row.status as DeepDive["status"],
+        agentState: row.agentState as AgentState,
         startedAt: row.startedAt,
         completedAt: row.completedAt,
         createdAt: row.createdAt,
+        messages,
+        insights,
       };
     },
-    async listDeepDivesByChild(childId) {
+
+    async listDeepDivesByChild(childId: string): Promise<DeepDive[]> {
       const rows = await db.select().from(deepDives).where(eq(deepDives.childId, childId));
-      const result: DeepDive[] = [];
+      const results: DeepDive[] = [];
       for (const row of rows) {
-        const turnRows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, row.id));
-        const turns: DeepDiveTurn[] = turnRows
-          .map((t) => ({
-            id: t.id,
-            deepDiveId: t.deepDiveId,
-            turnIndex: t.turnIndex,
-            type: t.type as DeepDiveTurn["type"],
-            expertMessage: t.expertMessage,
-            interactionType: t.interactionType as DeepDiveTurn["interactionType"],
-            options: t.options as DeepDiveTurnOption[] | undefined,
-            selectedOptionId: t.selectedOptionId ?? undefined,
-            textResponse: t.textResponse ?? undefined,
-            createdAt: t.createdAt,
-          }))
-          .sort((a, b) => a.turnIndex - b.turnIndex);
-        result.push({
+        const messages = await this.listDeepDiveMessages(row.id);
+        const insights = await this.listDeepDiveInsights(row.id);
+        results.push({
           id: row.id,
           missionId: row.missionId,
           sessionId: row.sessionId,
           childId: row.childId,
-          expert: row.expert as ExpertPersona,
-          realWorldCase: row.realWorldCase as DeepDiveRealWorldCase,
-          turns,
+          expert: row.expert as DeepDive["expert"],
+          realWorldCase: row.realWorldCase as DeepDive["realWorldCase"],
           portfolioEntry: row.portfolioEntry,
           status: row.status as DeepDive["status"],
+          agentState: row.agentState as AgentState,
           startedAt: row.startedAt,
           completedAt: row.completedAt,
           createdAt: row.createdAt,
+          messages,
+          insights,
         });
       }
-      return result;
+      return results;
     },
-    async upsertDeepDive(deepDive) {
+
+    async upsertDeepDive(dd: Omit<DeepDive, "messages" | "insights">) {
       await db.insert(deepDives).values({
-        id: deepDive.id,
-        missionId: deepDive.missionId,
-        sessionId: deepDive.sessionId,
-        childId: deepDive.childId,
-        expert: deepDive.expert,
-        realWorldCase: deepDive.realWorldCase,
-        portfolioEntry: deepDive.portfolioEntry,
-        status: deepDive.status,
-        startedAt: deepDive.startedAt,
-        completedAt: deepDive.completedAt,
-        createdAt: deepDive.createdAt,
+        id: dd.id,
+        missionId: dd.missionId,
+        sessionId: dd.sessionId,
+        childId: dd.childId,
+        expert: dd.expert,
+        realWorldCase: dd.realWorldCase,
+        portfolioEntry: dd.portfolioEntry,
+        status: dd.status,
+        agentState: dd.agentState,
+        startedAt: dd.startedAt,
+        completedAt: dd.completedAt,
+        createdAt: dd.createdAt,
       }).onConflictDoUpdate({
         target: deepDives.id,
         set: {
-          portfolioEntry: deepDive.portfolioEntry,
-          status: deepDive.status,
-          completedAt: deepDive.completedAt,
+          expert: dd.expert,
+          realWorldCase: dd.realWorldCase,
+          portfolioEntry: dd.portfolioEntry,
+          status: dd.status,
+          agentState: dd.agentState,
+          completedAt: dd.completedAt,
         },
       });
     },
-    async getDeepDiveTurn(deepDiveId, turnIndex) {
-      const row = await db.query.deepDiveTurns.findFirst({
-        where: and(
-          eq(deepDiveTurns.deepDiveId, deepDiveId),
-          eq(deepDiveTurns.turnIndex, turnIndex),
-        ),
+
+    async appendDeepDiveMessage(msg: DeepDiveMessage) {
+      await db.insert(deepDiveMessages).values({
+        id: msg.id,
+        deepDiveId: msg.deepDiveId,
+        messageIndex: msg.messageIndex,
+        role: msg.role,
+        content: msg.content,
+        toolCalls: msg.toolCalls ?? null,
+        createdAt: msg.createdAt,
       });
-      if (!row) return null;
-      return {
+    },
+
+    async listDeepDiveMessages(deepDiveId: string): Promise<DeepDiveMessage[]> {
+      const rows = await db
+        .select()
+        .from(deepDiveMessages)
+        .where(eq(deepDiveMessages.deepDiveId, deepDiveId))
+        .orderBy(deepDiveMessages.messageIndex);
+      return rows.map((row) => ({
         id: row.id,
         deepDiveId: row.deepDiveId,
-        turnIndex: row.turnIndex,
-        type: row.type as DeepDiveTurn["type"],
-        expertMessage: row.expertMessage,
-        interactionType: row.interactionType as DeepDiveTurn["interactionType"],
-        options: row.options as DeepDiveTurnOption[] | undefined,
-        selectedOptionId: row.selectedOptionId ?? undefined,
-        textResponse: row.textResponse ?? undefined,
+        messageIndex: row.messageIndex,
+        role: row.role as DeepDiveMessage["role"],
+        content: row.content,
+        toolCalls: (row.toolCalls as DeepDiveMessage["toolCalls"]) ?? undefined,
         createdAt: row.createdAt,
-      };
+      }));
     },
-    async listDeepDiveTurns(deepDiveId) {
-      const rows = await db.select().from(deepDiveTurns).where(eq(deepDiveTurns.deepDiveId, deepDiveId));
-      return rows
-        .map((t) => ({
-          id: t.id,
-          deepDiveId: t.deepDiveId,
-          turnIndex: t.turnIndex,
-          type: t.type as DeepDiveTurn["type"],
-          expertMessage: t.expertMessage,
-          interactionType: t.interactionType as DeepDiveTurn["interactionType"],
-          options: t.options as DeepDiveTurnOption[] | undefined,
-          selectedOptionId: t.selectedOptionId ?? undefined,
-          textResponse: t.textResponse ?? undefined,
-          createdAt: t.createdAt,
-        }))
-        .sort((a, b) => a.turnIndex - b.turnIndex);
-    },
-    async upsertDeepDiveTurn(turn) {
-      await db.insert(deepDiveTurns).values({
-        id: turn.id,
-        deepDiveId: turn.deepDiveId,
-        turnIndex: turn.turnIndex,
-        type: turn.type,
-        expertMessage: turn.expertMessage,
-        interactionType: turn.interactionType,
-        options: turn.options ?? null,
-        selectedOptionId: turn.selectedOptionId ?? null,
-        textResponse: turn.textResponse ?? null,
-        createdAt: turn.createdAt,
-      }).onConflictDoUpdate({
-        target: deepDiveTurns.id,
-        set: {
-          expertMessage: turn.expertMessage,
-          selectedOptionId: turn.selectedOptionId ?? null,
-          textResponse: turn.textResponse ?? null,
-        },
+
+    async appendDeepDiveInsight(insight: DeepDiveInsight) {
+      await db.insert(deepDiveInsights).values({
+        id: insight.id,
+        deepDiveId: insight.deepDiveId,
+        text: insight.text,
+        sourceMessageIndex: insight.sourceMessageIndex,
+        valueTags: insight.valueTags,
+        createdAt: insight.createdAt,
       });
+    },
+
+    async listDeepDiveInsights(deepDiveId: string): Promise<DeepDiveInsight[]> {
+      const rows = await db
+        .select()
+        .from(deepDiveInsights)
+        .where(eq(deepDiveInsights.deepDiveId, deepDiveId));
+      return rows.map((row) => ({
+        id: row.id,
+        deepDiveId: row.deepDiveId,
+        text: row.text,
+        sourceMessageIndex: row.sourceMessageIndex,
+        valueTags: row.valueTags as string[],
+        createdAt: row.createdAt,
+      }));
+    },
+
+    async updateAgentState(deepDiveId: string, agentState: AgentState) {
+      await db
+        .update(deepDives)
+        .set({ agentState })
+        .where(eq(deepDives.id, deepDiveId));
     },
   };
 }

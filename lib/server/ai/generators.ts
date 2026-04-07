@@ -44,6 +44,13 @@ export function buildMockRound(mission: Mission, roundIndex: number, session: Mi
         `${mission.role}로서 네 말과 태도를 지켜보는 사람들이 생겼고, 모두가 같은 마음은 아니라는 것도 보이기 시작했어.`,
       newDilemma: `${roundNumber}라운드에서는 누구의 마음을 먼저 살펴볼까?`,
     },
+    reflectionHint: roundIndex <= 1
+      ? "방금 선택할 때 제일 먼저 뭐가 떠올랐어?"
+      : roundIndex === 2
+        ? "이번에는 저번이랑 다른 기준으로 골랐나?"
+        : roundIndex === 3
+          ? "이 선택이 너에 대해 뭘 말해주는 것 같아?"
+          : "실제 생활에서도 비슷한 고민을 한 적 있어?",
     emotionOptions: [
       { id: `e${roundNumber}-calm`, emoji: "😌", label: "차분하게", valueTags: ["logic", "community"] },
       { id: `e${roundNumber}-bold`, emoji: "🔥", label: "단호하게", valueTags: ["independence", "efficiency"] },
@@ -88,6 +95,7 @@ export async function generateScenarioRound(
     id: `${session.id}:${roundIndex}`,
     roundIndex,
     consequence: parsed.consequence,
+    reflectionHint: parsed.reflectionHint ?? "",
     emotionOptions: parsed.emotionOptions.map((option) => ({
       ...option,
       valueTags: option.valueTags as ValueTag[],

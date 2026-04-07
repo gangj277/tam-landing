@@ -34,41 +34,42 @@ function buildInterestMap(
   tools: SessionToolUsage[],
   previousProfile: UserProfileSnapshot | null,
   choiceSets: DailyChoiceSet[],
+  deepDiveInsightTags: ValueTag[] = [],
 ) {
   const config = [
     {
       category: "창작 & 표현",
-      missionTags: ["디자인", "브랜딩", "카피라이팅", "표현력", "창작"],
+      missionTags: ["표현", "창작", "큐레이팅", "정체성", "자기이해", "성찰"],
       valueTags: ["creativity", "emotion"] as ValueTag[],
     },
     {
       category: "리더십 & 의사결정",
-      missionTags: ["리더십", "자원관리", "위기대응", "트레이드오프"],
+      missionTags: ["리더십", "자원관리", "재난대응", "시스템", "협력"],
       valueTags: ["efficiency", "independence"] as ValueTag[],
     },
     {
       category: "공감 & 관계",
-      missionTags: ["공감", "다중관점", "감정", "이해"],
+      missionTags: ["공감", "학교생활", "사회적역학", "감정", "용기"],
       valueTags: ["empathy", "emotion"] as ValueTag[],
     },
     {
       category: "윤리 & 사회",
-      missionTags: ["공정성", "공동체", "윤리", "책임"],
+      missionTags: ["공정성", "AI윤리", "기술", "미디어", "표현의자유", "사생활"],
       valueTags: ["fairness", "community"] as ValueTag[],
     },
     {
       category: "탐구 & 분석",
-      missionTags: ["관찰력", "분석", "디자인사고", "문제해결"],
+      missionTags: ["관찰력", "행동설계", "디자인사고", "경제", "일상"],
       valueTags: ["logic", "efficiency"] as ValueTag[],
     },
     {
       category: "모험 & 상상",
-      missionTags: ["우주", "모험", "상상력", "미래"],
+      missionTags: ["심해", "모험", "과학", "자원"],
       valueTags: ["adventure", "creativity"] as ValueTag[],
     },
     {
       category: "환경 & 지속가능성",
-      missionTags: ["환경", "자연", "생태", "도시설계", "도시"],
+      missionTags: ["환경", "심해", "과학", "공동체", "소통"],
       valueTags: ["community", "safety"] as ValueTag[],
     },
   ];
@@ -106,6 +107,10 @@ function buildInterestMap(
       item.valueTags.includes(tag),
     ).length;
 
+    const deepDiveValueMatchCount = deepDiveInsightTags.filter((tag) =>
+      item.valueTags.includes(tag),
+    ).length;
+
     const categoryMissionIds = new Set(
       completedMissions.filter((m) => m.tags.some((t) => item.missionTags.includes(t))).map((m) => m.id),
     );
@@ -115,7 +120,7 @@ function buildInterestMap(
     }).length;
 
     const currentScore = clampScore(
-      choiceSignal * 30 + valueMatchCount * 8 + rejectionCount * (-5) + categoryToolCount * 3,
+      choiceSignal * 30 + valueMatchCount * 8 + deepDiveValueMatchCount * 8 + rejectionCount * (-5) + categoryToolCount * 3,
     );
     const previousScore =
       previousProfile?.interestMap.find((entry) => entry.category === item.category)?.score ?? 0;
@@ -153,6 +158,13 @@ export async function recalculateProfileByChildId(childId: string) {
     await Promise.all(completedSessions.map((session) => store.listToolsBySession(session.id)))
   ).flat();
   const choiceSets = await store.listChoiceSetsByChild(child.id);
+
+  // Fetch deep-dive insight valueTags
+  const deepDives = await store.listDeepDivesByChild(child.id);
+  const completedDeepDives = deepDives.filter((dd) => dd.status === "completed");
+  const deepDiveInsightTags: ValueTag[] = completedDeepDives
+    .flatMap((dd) => dd.insights)
+    .flatMap((insight) => insight.valueTags as ValueTag[]);
 
   const completedDateKeys = [...new Set(completedSessions.map((session) => toKstDateKey(session.completedAt!)))].sort();
   const todayKey = toKstDateKey(nowIso());
@@ -203,6 +215,7 @@ export async function recalculateProfileByChildId(childId: string) {
       createdAt: nowIso(),
       updatedAt: nowIso(),
     },
+    deepDiveInsightTags,
   );
 
   const roleCounts = new Map<string, number>();
@@ -276,7 +289,7 @@ export async function recalculateProfileByChildId(childId: string) {
         icon: "🎭",
       },
     },
-    interestMap: buildInterestMap(completedSessions, completedMissions, reactions, tools, previousProfile, choiceSets),
+    interestMap: buildInterestMap(completedSessions, completedMissions, reactions, tools, previousProfile, choiceSets, deepDiveInsightTags),
     updatedAt: nowIso(),
   };
 
