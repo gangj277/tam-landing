@@ -420,10 +420,10 @@ export default function QuizPlayPage({
                   탐 TAM 알아보기
                 </a>
                 <a
-                  href="/signup"
+                  href="/consultation"
                   className="w-full flex items-center justify-center py-3 text-[13px] font-medium text-[#4A5FC1]"
                 >
-                  무료로 시작하기 →
+                  사전신청하기 →
                 </a>
               </div>
             </div>

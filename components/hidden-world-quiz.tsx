@@ -768,10 +768,10 @@ export default function HiddenWorldQuiz() {
                   {result.cta}
                 </p>
                 <a
-                  href="/signup"
+                  href="/consultation"
                   className="inline-flex items-center gap-2 bg-white text-[#1A1A2E] text-[14px] font-semibold px-6 py-3 rounded-full transition-all active:scale-[0.97]"
                 >
-                  탐 TAM 무료로 시작하기
+                  탐 TAM 사전신청하기
                 </a>
               </div>
 
