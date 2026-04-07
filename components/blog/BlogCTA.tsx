@@ -12,10 +12,10 @@ export function BlogCTA() {
         발견하는 경험 플랫폼
       </p>
       <a
-        href="/signup"
+        href="/consultation"
         className="inline-flex items-center justify-center px-7 py-3 rounded-full bg-coral text-white text-[15px] font-medium hover:bg-coral-hover transition-colors shadow-[0_2px_12px_rgba(232,97,77,0.3)]"
       >
-        무료로 시작하기
+        사전신청하기
       </a>
     </section>
   );

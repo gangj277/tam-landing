@@ -34,10 +34,10 @@ export function JayuCTA() {
 
           {/* Primary CTA */}
           <a
-            href="/signup"
+            href="/consultation"
             className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-coral text-white text-[15px] font-semibold hover:bg-coral-hover transition-all shadow-[0_2px_16px_rgba(232,97,77,0.3)] hover:shadow-[0_4px_24px_rgba(232,97,77,0.4)] hover:scale-[1.02] mb-4"
           >
-            무료로 시작하기
+            사전신청하기
           </a>
 
           {/* Secondary CTA */}
@@ -52,7 +52,7 @@ export function JayuCTA() {
 
           {/* Trust badges */}
           <p className="text-[13px] text-text-muted">
-            30초 가입 · 무료 체험 · 언제든 취소
+            간단한 정보 입력 · 출시 알림 · 얼리버드 혜택
           </p>
         </div>
 
