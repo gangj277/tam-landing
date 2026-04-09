@@ -25,6 +25,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
         {/* Logo */}
         <Link href="/" className="group">
           <TamLogo
+            tone={scrolled ? "light" : "dark"}
             size="md"
             className="transition-transform duration-300 group-hover:scale-[1.02]"
           />
@@ -32,52 +33,52 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
 
         {/* Nav links + buttons */}
         <div className="flex items-center gap-2">
-          {/* Always visible nav links */}
           <Link
             href="/guide"
-            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors hidden sm:block"
+            className={`text-[13px] font-medium px-4 py-2 rounded-full transition-colors hidden sm:block ${
+              scrolled ? "text-text-secondary hover:text-navy" : "text-white/50 hover:text-white/80"
+            }`}
           >
             학부모 가이드
           </Link>
           <Link
             href="/blog"
-            className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors hidden sm:block"
+            className={`text-[13px] font-medium px-4 py-2 rounded-full transition-colors hidden sm:block ${
+              scrolled ? "text-text-secondary hover:text-navy" : "text-white/50 hover:text-white/80"
+            }`}
           >
             블로그
           </Link>
           <Link
             href="/quiz"
-            className="text-[13px] font-medium px-4 py-2 rounded-full text-coral hover:text-coral-hover transition-colors hidden sm:block"
+            className={`text-[13px] font-medium px-4 py-2 rounded-full transition-colors hidden sm:block ${
+              scrolled ? "text-coral hover:text-coral-hover" : "text-coral hover:text-coral-hover"
+            }`}
           >
             무료 진단
           </Link>
 
-          {/* Auth-dependent CTA */}
           {isLoggedIn ? (
             <Link
               href="/home"
               className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 flex items-center gap-1.5 ${
                 scrolled
                   ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
-                  : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
+                  : "bg-white/10 text-white hover:bg-white/15"
               }`}
             >
               오늘의 탐험
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                <path
-                  d="M3 7h8M8 4l3 3-3 3"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                <path d="M3 7h8M8 4l3 3-3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </Link>
           ) : (
             <>
               <Link
                 href="/login"
-                className="text-[13px] font-medium px-4 py-2 rounded-full text-text-secondary hover:text-navy transition-colors"
+                className={`hidden sm:block text-[13px] font-medium px-4 py-2 rounded-full transition-colors ${
+                  scrolled ? "text-text-secondary hover:text-navy" : "text-white/50 hover:text-white/80"
+                }`}
               >
                 로그인
               </Link>
@@ -86,7 +87,7 @@ export default function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean })
                 className={`text-[13px] font-medium px-5 py-2 rounded-full transition-all duration-300 ${
                   scrolled
                     ? "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_8px_rgba(232,97,77,0.25)]"
-                    : "bg-navy/[0.06] text-navy hover:bg-navy/[0.1]"
+                    : "bg-coral text-white hover:bg-coral-hover shadow-[0_2px_12px_rgba(232,97,77,0.3)]"
                 }`}
               >
                 사전신청

@@ -306,3 +306,13 @@ body {
 .path-invite-pulse {
   animation: invitePulse 3s ease-in-out infinite;
 }
+
+/* ─── Trust Marquee ─── */
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}

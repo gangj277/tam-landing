@@ -1,11 +1,11 @@
 import { cookies } from "next/headers";
 import Navbar from "@/components/landing/Navbar";
 import HeroSection from "@/components/landing/HeroSection";
-import EducationReality from "@/components/landing/EducationReality";
-import ReframingSection from "@/components/landing/ReframingSection";
-import ResultShowcase from "@/components/landing/ResultShowcase";
-import HowItWorksCompact from "@/components/landing/HowItWorksCompact";
-import TamGuide from "@/components/landing/TamGuide";
+import TrustMarquee from "@/components/landing/TrustMarquee";
+import ExplorationSection from "@/components/landing/ExplorationSection";
+import ParentMentoringSection from "@/components/landing/ParentMentoringSection";
+import ReportSection from "@/components/landing/ReportSection";
+import PricingSection from "@/components/landing/PricingSection";
 import TrustSection from "@/components/landing/TrustSection";
 import CTASection from "@/components/landing/CTASection";
 import Footer from "@/components/landing/Footer";
@@ -18,28 +18,28 @@ export default async function Home() {
     <>
       <Navbar isLoggedIn={isLoggedIn} />
       <main>
-        {/* 1. Hero — 공감 질문 + 핵심 수치 */}
+        {/* 1. Hero — 다크 bg + 비주얼 카드 */}
         <HeroSection />
 
-        {/* 2. 교육 현실 — 고교학점제/사교육/중도탈락 긴급성 */}
-        <EducationReality />
+        {/* 2. Trust Marquee — 무한 스크롤 신뢰 배너 */}
+        <TrustMarquee />
 
-        {/* 3. 리프레이밍 — 기존 방식 vs 탐 방식 */}
-        <ReframingSection />
+        {/* 3. 아이 탐험 — 미션 비주얼 + 짧은 카피 */}
+        <ExplorationSection />
 
-        {/* 4. 결과물 — 주간 미러 한 방 (기존 5개 섹션 통합) */}
-        <ResultShowcase />
+        {/* 4. 부모 멘토링 — 대화 미션 비주얼 + 짧은 카피 */}
+        <ParentMentoringSection />
 
-        {/* 5. 작동 방식 — 3스텝 + 미션 예시 1개 */}
-        <HowItWorksCompact />
+        {/* 5. 리포트 — 관심영역 맵 + 발견된 패턴 */}
+        <ReportSection />
 
-        {/* 6. 사람+AI — 탐 가이드 + 가격 */}
-        <TamGuide />
+        {/* 6. 가격 — 2티어 */}
+        <PricingSection />
 
-        {/* 7. 신뢰 — 3항목 + 파운더 1줄 */}
+        {/* 7. 신뢰 — 3항목 간결 */}
         <TrustSection />
 
-        {/* 8. CTA — 전환 */}
+        {/* 8. CTA — 다크 bg 전환 유도 */}
         <CTASection />
       </main>
       <Footer />
